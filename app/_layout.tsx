@@ -2,4 +2,6 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { InspectionProvider } from '../services/inspection-context';
 import { colors } from '../constants/theme';
-export default function Layout() { return <InspectionProvider><StatusBar style="dark" /><Stack screenOptions={{ headerTintColor: colors.ink, headerStyle: { backgroundColor: colors.bg }, headerShadowVisible: false, contentStyle: { backgroundColor: colors.bg } }}><Stack.Screen name="index" options={{ title: 'TactileCheck' }} /><Stack.Screen name="inspection" options={{ title: '사진 등록' }} /><Stack.Screen name="result" options={{ title: '점검 결과' }} /></Stack></InspectionProvider>; }
+export default function Layout() {
+  return <InspectionProvider><StatusBar style="dark" /><Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'slide_from_right' }}><Stack.Screen name="index" /><Stack.Screen name="onboarding" /><Stack.Screen name="home" /><Stack.Screen name="inspection" /><Stack.Screen name="loading" options={{ gestureEnabled: false }} /><Stack.Screen name="result" /><Stack.Screen name="report" /></Stack></InspectionProvider>;
+}
