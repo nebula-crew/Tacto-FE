@@ -44,3 +44,5 @@ yarn-error.*
 
 # Local application backups
 /.tactilecheck-backups/
+
+.vercel
