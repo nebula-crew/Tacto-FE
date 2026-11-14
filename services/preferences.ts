@@ -1,8 +1,8 @@
 import { Platform } from 'react-native';
-const KEY = 'tactilecheck.onboarding.v1';
+const KEY = 'tacto.onboarding.v1';
 async function nativeFile() {
   const { File, Paths } = await import('expo-file-system');
-  return new File(Paths.document, 'tactilecheck-onboarding-v1.json');
+  return new File(Paths.document, 'tacto-onboarding-v1.json');
 }
 export async function readIntroDone(): Promise<boolean> {
   if (Platform.OS === 'web') return globalThis.localStorage.getItem(KEY) === 'true';
