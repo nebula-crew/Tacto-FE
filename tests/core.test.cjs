@@ -29,6 +29,29 @@ test('contract rejects unknown states, missing checks and malformed items', () =
   const { parseInspection } = load('services/inspection-schema.ts');
   for (const value of [null, { ...valid, status: 'safe' }, { ...valid, checks: null }, { ...valid, checks: [{ code: 'M3', status: 'normal' }] }]) assert.throws(() => parseInspection(value));
 });
+const backend = { inspection_id: 'abc123', overall: 'suspected', scope: { C: '판정', M: '건너뜀 (블록 영역이 너무 작거나 없음)' }, findings: [
+  { code: 'H2', verdict: 'hold', message: '시점 보정 실패로 횡단보도 진입 방향(C4) 판정 보류', clause: null, suggestion: null, primary: true },
+  { code: 'C1', verdict: 'suspected', message: '블록이 횡단보도 쪽을 향하지만 입구까지 이어지지 않음', clause: '장애인등편의법 시행규칙 별표 1 제16호 나목(2)', suggestion: '블록 경로를 횡단보도 입구까지 연장', primary: true },
+  { code: 'C3', verdict: 'suspected', message: '보조 판정', primary: false },
+] };
+test('backend InspectionResult maps to screen checks with clause, suggestion and not-applicable scope', () => {
+  const { parseInspection } = load('services/inspection-schema.ts');
+  const r = parseInspection(backend);
+  assert.equal(r.id, 'abc123'); assert.equal(r.status, 'suspected');
+  assert.match(r.summary, /^오류 의심 2건 · 보류 1건\. 블록이 횡단보도/);
+  assert.equal(r.checks.map(c => c.code).join(), 'C1,C3,H2,M');
+  assert.equal(r.checks[0].title, '횡단보도 연결 누락');
+  assert.match(r.checks[0].detail, /개선 방향: 블록 경로를 횡단보도 입구까지 연장\n근거: 장애인등편의법/);
+  assert.equal(r.checks[1].title, '꺾임 안내 누락 (보조)');
+  assert.equal(r.checks[2].title, '판정 보류 · 시점 보정 실패');
+  assert.equal(parseInspection({ inspection_id: 'h', overall: 'hold', scope: {}, findings: [{ code: 'M3', verdict: 'hold', message: '후보 없음' }] }).checks[0].title, '꺾임·분기점 점형 누락 (판정 보류)');
+  assert.equal(r.checks[3].status, 'not_applicable'); assert.equal(r.checks[3].detail, '블록 영역이 너무 작거나 없음');
+});
+test('backend format rejects unknown verdicts and malformed findings', () => {
+  const { parseInspection } = load('services/inspection-schema.ts');
+  for (const value of [{ ...backend, overall: 'safe' }, { ...backend, findings: null }, { ...backend, findings: [{ code: 'C1', verdict: 'bad', message: 'x' }] }]) assert.throws(() => parseInspection(value));
+  assert.equal(parseInspection({ inspection_id: 'n', overall: 'normal', scope: {}, findings: [] }).summary, '사진에서 확인한 항목에서는 설치 오류 후보가 보이지 않아요.');
+});
 test('intro is absent on first launch and remains completed after a new storage reader is created', async () => {
   const saved = new Map();
   const localStorage = { getItem: key => saved.get(key) ?? null, setItem: (key, value) => saved.set(key, value) };
@@ -51,12 +74,12 @@ test('storage denial is surfaced to allow the UI to offer retry/session-only ski
   const prefs = load('services/preferences.ts', {}, { localStorage: { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); } } });
   await assert.rejects(prefs.readIntroDone(), /denied/); await assert.rejects(prefs.writeIntroDone(), /denied/);
 });
-test('web upload uses one multipart file and the configured endpoint', async () => {
+test('web upload sends one multipart photo field and the configured endpoint', async () => {
   let calls = 0;
   const api = load('services/api.ts', {}, { fetch: async (url, options) => {
     calls++; assert.equal(url, 'http://example.test:8000/api/inspections'); assert.equal(options.method, 'POST');
-    assert.equal(options.headers, undefined); assert.equal([...options.body.keys()].join(), 'file');
-    assert.equal(options.body.get('file').name, 'photo.jpg');
+    assert.equal(options.headers, undefined); assert.equal([...options.body.keys()].join(), 'photo');
+    assert.equal(options.body.get('photo').name, 'photo.jpg');
     return { ok: true, json: async () => valid };
   } });
   const stages = [];

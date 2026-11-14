@@ -17,8 +17,8 @@ export async function createInspection(photo: Photo, signal: AbortSignal, onStag
     const form = new FormData();
     if (Platform.OS === 'web') {
       const file = photo.file ?? await (await fetch(photo.uri, { signal: controller.signal })).blob();
-      form.append('file', file, photo.name);
-    } else form.append('file', { uri: photo.uri, name: photo.name, type: photo.mimeType } as unknown as Blob);
+      form.append('photo', file, photo.name);
+    } else form.append('photo', { uri: photo.uri, name: photo.name, type: photo.mimeType } as unknown as Blob);
     onStage('waiting');
     const response = await fetch(`${API_URL}/api/inspections`, { method: 'POST', body: form, signal: controller.signal });
     if (!response.ok) throw new Error(`분석 요청을 완료하지 못했어요. (HTTP ${response.status})`);
