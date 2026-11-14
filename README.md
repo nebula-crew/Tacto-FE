@@ -1,64 +1,57 @@
-# TactileCheck 모바일
+# tacto 모바일
 
-한 장의 사진으로 점자블록 설치 상태를 점검하는 React Native + Expo 앱입니다. FastAPI/YOLO 백엔드와 독립적으로 실행합니다. 홈 → 사진 촬영/갤러리 → 점검 결과 흐름이며, 녹색과 아이보리 중심의 차분한 화면입니다.
+Expo SDK 58 + React Native + TypeScript + Expo Router. 기존 `app/`, `components/`, `services/`, `types/`, `constants/`, `assets/` 구조를 유지한 모바일 프론트엔드입니다.
 
 ## 실행
 
-Node.js 22 LTS 이상과 npm을 사용하세요. Windows에서는 Android 기기/에뮬레이터 또는 웹으로 확인할 수 있습니다. iOS 네이티브 빌드는 macOS 또는 EAS Build가 필요합니다.
+Node.js 22 LTS 이상을 사용하세요.
 
 ```powershell
-cd "C:\Users\yangs\Desktop\수업\우왕톤\WOOWANGTHON_TEAM_47_FE"
-code .
 npm ci
-Copy-Item .env.example .env
+Copy-Item .env.example .env  # .env가 없을 때만 실행
 npm start
 ```
 
-설치된 Expo Go와 프로젝트 SDK가 일치해야 합니다. 이 프로젝트는 SDK 58입니다. 기기에 맞는 클라이언트는 https://expo.dev/go 에서 확인하세요. Expo Go가 해당 SDK를 지원하지 않으면 호환 클라이언트 또는 development build가 필요합니다. 터미널의 QR을 스캔하거나 Android 에뮬레이터에서 `a`를 누르세요. 웹 확인은 `npm run web`입니다. 웹 카메라는 HTTPS 또는 localhost와 브라우저 권한이 필요합니다.
+`.env`가 이미 있다면 그대로 유지하세요. 웹 확인은 `npm run web`, Android 에뮬레이터는 `npm run android`입니다. 실제 휴대폰에서는 프로젝트 SDK와 호환되는 Expo Go 또는 개발 빌드를 사용하세요: https://expo.dev/go
 
-VS Code의 `code` 명령이 없으면 파일 → 폴더 열기로 위 폴더를 선택하세요. 루트 폴더 자체가 앱이므로 별도 front_end 하위 폴더는 없습니다.
+## 화면 구성
 
-## 서버 설정
+Appetize 네이티브 앱 데모 배포는 [배포 안내](docs/appetize-deployment.md)를 참고하세요.
+`eas.json`의 `appetize` 프로필로 Android APK와 iOS 시뮬레이터 빌드를 생성할 수 있습니다.
 
-`.env`의 `EXPO_PUBLIC_API_URL`에 `/api`를 제외한 서버 주소를 입력하세요.
+- `app/index.tsx`: 기기 저장소를 읽은 뒤 첫 실행 안내 또는 홈으로 이동. 저장소 확인 전에는 홈 화면이 깜빡이지 않도록 대기합니다.
+- `app/onboarding.tsx`: 한 화면에 맞춘 설명 카드 3장. 일정 거리 이상 스와이프하면 한 장씩 이동하며, 점 양옆 버튼으로도 이동합니다. 마지막 카드에서는 이동 표시 아래에 시작하기 버튼을 표시합니다.
+- `app/home.tsx`: 두 가지 주 기능(촬영·갤러리), 아이콘이 있는 촬영 팁, 이번 실행의 최근 결과 확인 버튼. 결과가 없으면 안내 문구를 표시합니다.
+- `app/inspection.tsx`: 한 장 미리보기와 실제/예시 점검 시작. 사진 선택 취소 시 현재 사진을 유지합니다.
+- `app/loading.tsx`: 실제 요청 준비/서버 응답 대기/응답 정리 상태. 취소 시 fetch를 중단합니다. 동기 API가 모델 단계별 진행률을 제공하지 않으므로 임의의 진행률이나 YOLO 작업 완료를 표시하지 않습니다. 예시 모드만 시간에 따라 이동합니다.
+- `app/result.tsx`: 전체 상태·항목별 상태, 펼쳐보는 상세 보고서. 전체 또는 항목에 오류 의심이 있을 때만 신고 버튼을 표시합니다.
+- `app/report.tsx`: 위치·내용 검증과 신고 초안 텍스트 공유. **기관 신고 접수 API는 연결하지 않았습니다.** 실제 접수 완료를 표시하지 않습니다. 사진은 공유 텍스트에 첨부되지 않습니다.
+
+Supabase 민트 `#3ECF8E`, 연회색 배경 `#F2F4F5`, 흰 카드와 옅은 그림자를 적용했습니다. 화면 콘텐츠는 넓은 화면에서도 최대 폭을 제한하고 작은 화면과 글자 크기에 맞춰 줄바꿈합니다. 기본 앱 아이콘은 기존 자산을 유지했습니다.
+
+## 첫 실행 저장
+
+Android/iOS는 `expo-file-system`의 앱 document에 안내 완료 여부만 저장하고 웹은 localStorage를 사용합니다. 앱 종료 후에도 완료 상태를 유지합니다. 앱 삭제/데이터 초기화 또는 웹 사이트 저장소 삭제 시 안내가 다시 나타납니다. 홈의 이용 안내에서 언제든 다시 볼 수 있습니다. 저장이 거부되면 오류와 다시 시도/이번만 건너뛰기를 제공합니다. 사진과 보고서는 이번 실행의 메모리에만 남습니다.
+
+## 서버 연결
 
 ```dotenv
 EXPO_PUBLIC_API_URL=http://192.168.0.10:8000
 ```
 
-실제 휴대폰의 localhost는 휴대폰 자신입니다. PC의 LAN IP를 사용하고 같은 Wi-Fi에 연결하세요. Android 기본 에뮬레이터는 `http://10.0.2.2:8000`을 사용할 수 있습니다. FastAPI는 별도 백엔드 폴더에서 `uvicorn main:app --host 0.0.0.0 --port 8000`처럼 실행하되 실제 모듈명에 맞게 수정하세요. 방화벽과 포트 접근도 확인하세요. 웹에서는 FastAPI CORS에 개발 웹 주소를 허용해야 합니다. 환경변수 변경 후 개발 서버를 재시작하세요. 배포 시에는 HTTPS 서버를 사용하세요. `EXPO_PUBLIC_` 변수는 앱에 공개되므로 비밀키를 넣지 마세요.
+`/api`를 제외한 백엔드 주소입니다. 환경변수를 바꾸면 개발 서버를 재시작하세요. 실제 휴대폰은 PC의 LAN IP를 사용하며 localhost는 휴대폰 자신입니다. Android 기본 에뮬레이터는 `http://10.0.2.2:8000`을 사용할 수 있습니다. 서버는 외부 접근 가능한 인터페이스로 실행하고 방화벽을 확인하세요. 웹 테스트에서는 FastAPI CORS에 개발 웹 주소를 허용해야 합니다. 운영 시 HTTPS를 사용하고 공개 환경변수에 비밀키를 넣지 마세요.
 
-## 구조
+`services/api.ts`에서 `POST /api/inspections`로 multipart `file` 필드에 JPEG 한 장을 보냅니다. `docs/api-contract.md`의 기존 동기 응답 계약을 유지합니다. 실제 백엔드 스키마는 별도 확인이 필요하며 비동기 job_id API면 상태 조회 연동을 추가해야 합니다. 타임아웃 60초, 서버 오류, 잘못된 응답, 네트워크 오류를 처리합니다. 취소는 클라이언트 요청을 중단하지만 이미 시작된 서버 작업까지 취소한다고 보장하지 않습니다.
 
-```text
-app/                 # Expo Router
-  _layout.tsx        # 화면 스택 및 상태 공급
-  index.tsx          # 홈
-  inspection.tsx     # 한 장 촬영/선택 및 요청
-  result.tsx         # 결과 및 항목별 상태
-components/ui.tsx    # 공통 화면·버튼·상태 표시
-services/api.ts      # HTTP 요청, 응답 검증, 연결 오류·시간 제한
-services/inspection-context.tsx # 메모리 내 사진/결과
-types/inspection.ts  # API와 화면 타입
-constants/           # 색상, 명확히 구분된 예시 데이터
-assets/              # Expo 기본 앱 아이콘 등 교체 가능한 자산
-docs/api-contract.md # 백엔드 연결 계약
-```
+모델 통합·신고 기관 접수·결과 PDF·오류 위치 오버레이·영구 점검 기록은 포함하지 않습니다. 예시 결과는 실제 사진 분석 결과와 명확히 구분합니다.
 
-사진은 한 장만 유지하고 JPEG로 변환해 전송합니다. 카메라 권한 거부, 선택 취소, 네트워크 오류, HTTP 오류, 잘못된 응답, 60초 시간 초과를 처리합니다. 선택 취소 시 기존 사진을 유지합니다. 사진과 결과는 저장하지 않으며 앱 재시작 시 사라집니다. 사진은 실제 분석 버튼을 눌렀을 때만 서버로 전송됩니다. 서버의 사진 저장·삭제 정책은 백엔드에서 별도 구현해야 합니다.
-
-## 백엔드 통합 범위
-
-`POST /api/inspections`에 multipart의 `file` 필드로 JPEG 한 장을 보냅니다. 현재 서버 스키마를 직접 확인한 상태가 아니므로 `docs/api-contract.md`의 프론트 계약에 맞춰 백엔드를 조정하거나 `services/api.ts`에서 매핑하세요. 모델 실행·학습·YOLO 결과 해석은 포함하지 않습니다. 실제 API 실패를 정상 결과로 바꾸지 않습니다.
-
-서버 없이 사진 등록 화면 하단의 세 가지 예시 버튼으로 오류 의심/정상 추정/판정 보류 화면을 볼 수 있습니다. 예시는 분석이 아니라는 안내를 표시합니다. H3 등 대상이 없는 항목은 `not_applicable`(미적용)으로 표시할 수 있습니다. M3/C5/C6/H3 예시는 화면 개발용이며 규칙 전체 구현이 아닙니다. 오류 위치 오버레이와 결과 저장은 아직 구현하지 않았습니다.
-
-## 검증 명령
+## 검증
 
 ```powershell
 npm run typecheck
-npx expo install --check
+npm run lint
+npm test
 npx expo export --platform all --output-dir dist
 ```
 
-실기기에서 카메라 권한 허용/거부, 사진 선택 취소와 교체, 가로/세로 사진, 서버 연결 성공/실패를 확인하세요. 자동 빌드 검증은 카메라 하드웨어와 실제 모델 서버의 동작을 보장하지 않습니다.
+자동 검사는 API 응답 계약, multipart 요청, 오류/취소 처리, 첫 실행 저장의 웹/네이티브 어댑터를 검증합니다. 실기기에서 권한 허용/거부, 사진 선택 취소/교체, 종료 후 재실행, 스와이프, 서버 연결, 큰 글자 크기, 공유 창을 별도로 확인하세요. 네이티브 저장 검사는 실제 기기 파일 시스템 대신 동일 인터페이스의 테스트 어댑터를 사용합니다.

@@ -1,15 +1,18 @@
 {
   "expo": {
-    "name": "TactileCheck",
+    "name": "tacto",
     "slug": "tactilecheck-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#F2F4F5",
     "ios": {
+      "bundleIdentifier": "com.woowangthon.team47.tacto",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.woowangthon.team47.tacto",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -19,19 +22,33 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#F2F4F5",
+      "output": "single"
     },
-    "scheme": "tactilecheck",
+    "scheme": "tacto",
     "plugins": [
+      ["expo-navigation-bar", { "enforceContrast": false, "style": "dark" }],
       "expo-router",
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Allow TactileCheck to take inspection photos.",
-          "photosPermission": "Allow TactileCheck to select an inspection photo.",
+          "cameraPermission": "Allow tacto to take inspection photos.",
+          "photosPermission": "Allow tacto to select an inspection photo.",
           "microphonePermission": false
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "98ed38af-7b83-4d5e-a9d3-38748267b8fa"
+      }
+    },
+    "owner": "rntka"
   }
 }
