@@ -1,0 +1,6 @@
+import { StyleSheet, View } from 'react-native';
+import { colors as c } from '../constants/theme';
+export function ActionIcon({ camera }: { camera: boolean }) {
+  return <View accessible={false} style={a.wrap}><View style={a.frame}>{camera ? <View style={a.lens} /> : <><View style={a.sun} /><View style={a.mountain} /></>}</View>{camera && <View style={a.top} />}</View>;
+}
+const a = StyleSheet.create({ wrap: { width: 34, height: 31, justifyContent: 'flex-end' }, frame: { width: 32, height: 24, borderWidth: 2, borderRadius: 5, borderColor: c.greenInk, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, top: { position: 'absolute', width: 14, height: 6, left: 9, top: 2, borderTopLeftRadius: 3, borderTopRightRadius: 3, borderWidth: 2, borderBottomWidth: 0, borderColor: c.greenInk, backgroundColor: c.paper }, lens: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: c.greenInk }, sun: { position: 'absolute', width: 5, height: 5, borderRadius: 3, backgroundColor: c.greenInk, top: 3, right: 5 }, mountain: { width: 17, height: 17, borderWidth: 2, borderColor: c.greenInk, transform: [{ rotate: '45deg' }], position: 'absolute', bottom: -10, left: 4 } });
