@@ -1,4 +1,4 @@
-# TactileCheck 모바일
+# tacto 모바일
 
 Expo SDK 58 + React Native + TypeScript + Expo Router. 기존 `app/`, `components/`, `services/`, `types/`, `constants/`, `assets/` 구조를 유지한 모바일 프론트엔드입니다.
 
@@ -16,9 +16,12 @@ npm start
 
 ## 화면 구성
 
+Appetize 네이티브 앱 데모 배포는 [배포 안내](docs/appetize-deployment.md)를 참고하세요.
+`eas.json`의 `appetize` 프로필로 Android APK와 iOS 시뮬레이터 빌드를 생성할 수 있습니다.
+
 - `app/index.tsx`: 기기 저장소를 읽은 뒤 첫 실행 안내 또는 홈으로 이동. 저장소 확인 전에는 홈 화면이 깜빡이지 않도록 대기합니다.
-- `app/onboarding.tsx`: 좌우 스와이프·페이지 버튼·다음·건너뛰기를 제공하는 설명 카드 3장. 완료/건너뛰기 시 기기에 버전별 완료 상태를 저장합니다.
-- `app/home.tsx`: 두 가지 주 기능(촬영·갤러리), 촬영 팁, 이번 실행의 최근 결과, 명시적으로 구분된 예시 모드.
+- `app/onboarding.tsx`: 한 화면에 맞춘 설명 카드 3장. 일정 거리 이상 스와이프하면 한 장씩 이동하며, 점 양옆 버튼으로도 이동합니다. 마지막 카드에서는 이동 표시 아래에 시작하기 버튼을 표시합니다.
+- `app/home.tsx`: 두 가지 주 기능(촬영·갤러리), 아이콘이 있는 촬영 팁, 이번 실행의 최근 결과 확인 버튼. 결과가 없으면 안내 문구를 표시합니다.
 - `app/inspection.tsx`: 한 장 미리보기와 실제/예시 점검 시작. 사진 선택 취소 시 현재 사진을 유지합니다.
 - `app/loading.tsx`: 실제 요청 준비/서버 응답 대기/응답 정리 상태. 취소 시 fetch를 중단합니다. 동기 API가 모델 단계별 진행률을 제공하지 않으므로 임의의 진행률이나 YOLO 작업 완료를 표시하지 않습니다. 예시 모드만 시간에 따라 이동합니다.
 - `app/result.tsx`: 전체 상태·항목별 상태, 펼쳐보는 상세 보고서. 전체 또는 항목에 오류 의심이 있을 때만 신고 버튼을 표시합니다.
