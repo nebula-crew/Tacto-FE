@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { colors as c } from '../constants/theme';
 
 type Scene = 'path' | 'capture' | 'report';
 const descriptions: Record<Scene, string> = {
   path: '주변 보도와 함께 이어진 노란 점자블록',
-  capture: '점자블록과 주변 길을 프레임에 담는 카메라',
+  capture: '점자블록과 주변 길을 촬영하는 스마트폰',
   report: '항목별 확인 내용과 알림 표시가 있는 점검 보고서',
 };
 
@@ -12,20 +12,21 @@ function Tile({ dots = false }: { dots?: boolean }) {
   return <View style={a.tile}>{Array.from({ length: dots ? 9 : 3 }, (_, i) => <View key={i} style={dots ? a.dot : a.ridge} />)}</View>;
 }
 
-export function OnboardingIllustration({ scene, label }: { scene: Scene; label: string }) {
-  return <View accessible accessibilityRole="image" accessibilityLabel={`${descriptions[scene]} · ${label}`} style={a.hero}>
+export function OnboardingIllustration({ scene, label, height = 230 }: { scene: Scene; label: string; height?: number }) {
+  const scale = Math.max(0, Math.min(1, (height - 12) / 190));
+  return <View accessible accessibilityRole="image" accessibilityLabel={`${descriptions[scene]} · ${label}`} style={[a.hero, { height }]}>
     <View style={a.halo} />
-    <View style={a.stage}>
+    <View style={[a.stage, { transform: [{ scale }] }]}>
       {scene === 'path' && <View style={a.path}>
         <View style={a.pavement}><View style={a.paver} /><Tile /><View style={a.paver} /><View style={a.paver} /><Tile dots /><View style={a.paver} /><View style={a.paver} /><Tile /><View style={a.paver} /></View>
-        <View style={a.pathMarker}><View style={a.markerDot} /></View>
+        <View style={a.markerShadow} />
+        <View style={a.pathMarker}><View style={a.markerBody}><View style={a.markerDot} /></View><View style={a.markerTip} /></View>
       </View>}
-      {scene === 'capture' && <View style={a.cameraScene}>
-        <View style={a.cameraTop} />
-        <View style={a.camera}><View style={a.cameraLight} /><View style={a.viewfinder}>
+      {scene === 'capture' && <View style={a.phoneScene}>
+        <View style={a.phone}><View style={a.speaker} /><View style={a.viewfinder}>
           <View style={a.miniPath}><Tile /><Tile dots /></View>
           <View style={[a.corner, a.topLeft]} /><View style={[a.corner, a.topRight]} /><View style={[a.corner, a.bottomLeft]} /><View style={[a.corner, a.bottomRight]} />
-        </View></View>
+        </View><View style={a.shutter}><View style={a.shutterInner} /></View></View>
         <View style={a.gallery}><View style={a.sun} /><View style={a.mountain} /></View>
       </View>}
       {scene === 'report' && <View style={a.reportScene}>
@@ -35,26 +36,30 @@ export function OnboardingIllustration({ scene, label }: { scene: Scene; label: 
         <View style={a.bubble}><View style={a.bubbleLine} /><View style={[a.bubbleLine, { width: 18 }]} /><View style={a.bubbleTail} /></View>
       </View>}
     </View>
-    <View style={a.label}><Text style={a.labelText}>{label}</Text></View>
   </View>;
 }
 
 const a = StyleSheet.create({
-  hero: { minHeight: 230, borderRadius: 19, backgroundColor: '#F3F8F5', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  halo: { position: 'absolute', top: 14, width: 182, height: 182, borderRadius: 100, backgroundColor: c.paper },
-  stage: { width: 230, height: 174, marginBottom: 30, alignItems: 'center', justifyContent: 'center' },
-  path: { transform: [{ rotate: '-12deg' }] },
-  pavement: { width: 142, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  hero: { borderRadius: 19, backgroundColor: '#F3F8F5', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  halo: { position: 'absolute', width: 182, height: 182, borderRadius: 100, backgroundColor: c.paper },
+  stage: { width: 230, height: 174, alignItems: 'center', justifyContent: 'center' },
+  path: { width: 142, height: 142 },
+  pavement: { width: 142, flexDirection: 'row', flexWrap: 'wrap', gap: 5, transform: [{ rotate: '-12deg' }] },
   paver: { width: 44, height: 44, backgroundColor: '#E4E8E6', borderRadius: 4 },
   tile: { width: 44, height: 44, borderRadius: 4, backgroundColor: '#E4BF56', flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'center', gap: 6, padding: 4 },
   ridge: { width: 5, height: 34, borderRadius: 3, backgroundColor: '#B28B30' },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#B28B30' },
-  pathMarker: { position: 'absolute', left: 56, top: 56, width: 30, height: 30, borderRadius: 15, borderBottomRightRadius: 3, backgroundColor: c.greenInk, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '45deg' }] },
+  // Float eight pixels above the center while the shadow marks the exact target.
+  markerShadow: { position: 'absolute', left: 61, top: 68, width: 20, height: 6, borderRadius: 10, backgroundColor: 'rgba(25, 135, 91, 0.18)' },
+  pathMarker: { position: 'absolute', left: 56, top: 25, width: 30, height: 38, alignItems: 'center' },
+  markerBody: { width: 30, height: 30, borderRadius: 15, backgroundColor: c.greenInk, alignItems: 'center', justifyContent: 'center' },
+  markerTip: { position: 'absolute', bottom: 0, width: 0, height: 0, borderLeftWidth: 10, borderRightWidth: 10, borderTopWidth: 15, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: c.greenInk },
   markerDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.paper },
-  cameraScene: { width: 190, height: 150, justifyContent: 'center' },
-  cameraTop: { position: 'absolute', left: 24, top: 12, width: 52, height: 24, borderRadius: 9, backgroundColor: c.greenInk },
-  camera: { width: 168, height: 112, borderRadius: 18, backgroundColor: c.greenInk, padding: 12 },
-  cameraLight: { position: 'absolute', right: 12, top: 9, width: 7, height: 7, borderRadius: 4, backgroundColor: '#B8ECD3' },
+  phoneScene: { width: 166, height: 174, alignItems: 'center' },
+  phone: { width: 98, height: 172, borderRadius: 19, backgroundColor: c.greenInk, padding: 7, paddingTop: 17, paddingBottom: 28 },
+  speaker: { position: 'absolute', top: 7, left: 37, width: 24, height: 3, borderRadius: 2, backgroundColor: '#B8ECD3' },
+  shutter: { position: 'absolute', bottom: 6, left: 39, width: 20, height: 20, borderRadius: 10, borderWidth: 1, borderColor: '#B8ECD3', alignItems: 'center', justifyContent: 'center' },
+  shutterInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: c.paper },
   viewfinder: { flex: 1, borderRadius: 9, backgroundColor: '#EAF1ED', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   miniPath: { gap: 3, transform: [{ rotate: '-12deg' }, { scale: 0.7 }] },
   corner: { position: 'absolute', width: 16, height: 16, borderColor: c.greenInk },
@@ -80,6 +85,4 @@ const a = StyleSheet.create({
   bubble: { position: 'absolute', right: 0, bottom: 12, width: 60, height: 48, borderRadius: 13, backgroundColor: c.greenInk, justifyContent: 'center', paddingLeft: 13, gap: 6 },
   bubbleLine: { height: 4, width: 32, borderRadius: 2, backgroundColor: '#D8F5E6' },
   bubbleTail: { position: 'absolute', bottom: -5, left: 12, width: 13, height: 13, borderRadius: 2, backgroundColor: c.greenInk, transform: [{ rotate: '45deg' }] },
-  label: { position: 'absolute', bottom: 16, right: 14, backgroundColor: c.paper, borderRadius: 11, padding: 11, borderWidth: 1, borderColor: '#E7EEE9' },
-  labelText: { fontSize: 12, color: c.greenInk },
 });
