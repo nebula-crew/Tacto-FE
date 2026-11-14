@@ -31,3 +31,26 @@ export async function createInspection(photo: Photo, signal: AbortSignal, onStag
     throw error;
   } finally { clearTimeout(timeout); signal.removeEventListener('abort', cancel); }
 }
+
+export type ReportInput = { address: string; memo?: string };
+
+// 신고 접수: 발견 위치·내용을 점검 건에 저장한다 (관리자 신고 목록에 나옴). BE docs/API.md 신고 접수.
+export async function submitReport(inspectionId: string, input: ReportInput): Promise<void> {
+  if (!API_URL) throw new Error('서버 주소가 없어요. EXPO_PUBLIC_API_URL 설정 후 다시 실행해 주세요.');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api/inspections/${encodeURIComponent(inspectionId)}/report`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input), signal: controller.signal,
+    });
+  } catch {
+    throw new Error(controller.signal.aborted ? '응답이 늦어지고 있어요. 잠시 후 다시 시도해 주세요.' : '서버에 연결할 수 없어요. 네트워크를 확인해 주세요.');
+  } finally { clearTimeout(timeout); }
+  if (response.ok) return;
+  if (response.status === 409) throw new Error('이미 담당자가 확인 중인 신고라 수정할 수 없어요.');
+  if (response.status === 404) throw new Error('점검 기록을 찾지 못했어요. 다시 점검한 뒤 신고해 주세요.');
+  if (response.status === 422) throw new Error('발견 위치와 내용을 확인해 주세요. (위치 200자, 내용 1000자 이내)');
+  if (response.status === 429) throw new Error('요청이 너무 많아요. 1분 뒤에 다시 시도해 주세요.');
+  throw new Error(`신고를 접수하지 못했어요. 잠시 후 다시 시도해 주세요. (HTTP ${response.status})`);
+}

@@ -101,3 +101,17 @@ test('cancelling aborts the actual HTTP request', async () => {
   const request = api.createInspection({ uri: '', name: 'x.jpg', file: new Blob(['x']) }, controller.signal, () => {});
   await started; controller.abort(); await assert.rejects(request, /취소/);
 });
+test('report submit posts JSON location to the inspection and surfaces server refusals', async () => {
+  let sent;
+  let api = load('services/api.ts', {}, { fetch: async (url, options) => { sent = { url, options }; return { ok: true, status: 200 }; } });
+  await api.submitReport('id/1', { address: '우암동 횡단보도', memo: '연결 안 됨' });
+  assert.equal(sent.url, 'http://example.test:8000/api/inspections/id%2F1/report');
+  assert.equal(sent.options.method, 'POST'); assert.equal(sent.options.headers['Content-Type'], 'application/json');
+  assert.equal(sent.options.body, JSON.stringify({ address: '우암동 횡단보도', memo: '연결 안 됨' }));
+  api = load('services/api.ts', {}, { fetch: async () => ({ ok: false, status: 409 }) });
+  await assert.rejects(api.submitReport('x', { address: 'a' }), /확인 중/);
+  api = load('services/api.ts', {}, { fetch: async () => ({ ok: false, status: 502 }) });
+  await assert.rejects(api.submitReport('x', { address: 'a' }), /HTTP 502/);
+  api = load('services/api.ts', {}, { fetch: async () => { throw new TypeError('fail'); } });
+  await assert.rejects(api.submitReport('x', { address: 'a' }), /연결할 수 없어요/);
+});

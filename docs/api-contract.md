@@ -39,10 +39,22 @@
 
 예전 화면 계약(`{ id, status, summary, checks }`)도 그대로 받습니다 (예시 데이터·테스트용).
 
+## 신고 접수 (`app/report.tsx` → `submitReport`)
+
+`POST /api/inspections/{inspection_id}/report`, JSON `{ "address": 발견 위치, "memo": 확인이 필요한 내용 }` (위치 200자, 내용 1000자 이내).
+접수되면 관리자 신고 목록에 위치가 채워져 나옵니다. 담당자가 확인을 시작하기 전(`received`)까지는 다시 보내면 덮어씁니다.
+
+| 상태 | 화면 안내 |
+| --- | --- |
+| 409 | 이미 담당자가 확인 중이라 수정 불가 |
+| 404 | 점검 기록 없음 → 다시 점검 |
+| 422 | 위치·내용 길이 확인 |
+| 그 외 | 접수 실패, 다시 시도 |
+
 ## 아직 쓰지 않는 서버 기능
 
 - `photo_url`, `findings[].location`: 저장된 사진과 사진 위 판정 위치 핀
-- 위치 저장: 점검 요청에 `address`·`memo`·`lat`·`lng`를 같이 보내면 신고로 저장되어 관리자 화면에 나옵니다
+- `lat`·`lng`: 현재 위치(GPS) 첨부 (`expo-location` 필요)
 - 관리자 API (`/api/admin/inspections`, `X-Admin-Token` 헤더)
 
 4xx/5xx와 형식이 다른 응답은 실패로 표시하고, 임의의 분석 결과를 만들지 않습니다.
