@@ -36,7 +36,7 @@ export default function Home() {
     </View>
     {(picker.error || picker.permissionDenied) && <View style={h.error}><ErrorMessage message={picker.error} />{picker.permissionDenied && <Button secondary title="권한 설정 열기" onPress={() => { void Linking.openSettings().catch(() => {}); }} />}</View>}
     <Card style={[h.tips, compact && h.compactTips, short && h.shortTips]}>
-      <Text style={s.heading}>이렇게 담으면 좋아요</Text>
+      <Text style={s.heading}>이렇게 찍으면 좋아요</Text>
       <View style={h.tipRow}><TipIcon /><Text style={[s.text, h.tipText]}>블록만 확대하지 말고 주변 동선과 연결부까지 함께 담아 주세요.</Text></View>
       <View style={h.tipRow}><TipIcon light /><Text style={[s.text, h.tipText]}>밝은 곳에서 흔들림 없이 촬영해 주세요.</Text></View>
     </Card>
