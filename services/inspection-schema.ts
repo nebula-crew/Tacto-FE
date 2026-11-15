@@ -160,13 +160,18 @@ function summaryOf(status: InspectionStatus, findings: Finding[]): string {
   return RETAKE[h.code] ? `${CODE_TITLES[h.code]}. ${RETAKE[h.code]}` : plain(h.message);
 }
 
-// 같은 제목·같은 판정이 여러 번 나오면 (예: 진입부 점형 정상 + 돌출선 방향 정상) 한 항목으로 합친다.
+// 같은 제목·같은 판정은 한 항목으로 합치되, 반복 판정의 동일한 설명은 한 번만 남긴다.
 function merge(checks: Inspection['checks']): Inspection['checks'] {
   const out: Inspection['checks'] = [];
   for (const c of checks) {
     const same = out.find(o => o.title === c.title && o.status === c.status);
     if (same) {
-      const extra = c.detail.split('\n').filter(line => !line.startsWith('확인 기준:') || !same.detail.includes(line));
+      const seen = new Set(same.detail.split('\n'));
+      const extra = c.detail.split('\n').filter(line => {
+        if (seen.has(line)) return false;
+        seen.add(line);
+        return true;
+      });
       same.detail = [same.detail, ...extra].join('\n');
     }
     else out.push({ ...c });

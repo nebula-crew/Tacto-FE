@@ -67,6 +67,25 @@ test('normal result shows friendly explanations without rule codes or not-applic
   assert.equal(held.summary, '사진 각도 때문에 방향은 판단하지 못했어요. 횡단보도 흰 줄이 4개 이상 보이게 찍으면 방향까지 확인할 수 있어요.');
   assert.equal(plain('횡단보도가 보이지 않아 연결 판정(C1·C3·C4) 보류. 차도 직진(C2)만 확인함'), '횡단보도가 보이지 않아 연결 판정 보류. 차도 직진만 확인함');
 });
+test('repeated findings keep each distinct explanation only once', () => {
+  const { parseInspection } = load('services/inspection-schema.ts');
+  for (const code of ['M3', 'M4', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6']) {
+    for (const verdict of ['suspected', 'normal', 'hold']) {
+      const finding = { code, verdict, message: '같은 사진에서 반복된 판정', suggestion: '설치 상태 확인', clause: '동일 근거' };
+      const result = parseInspection({ inspection_id: 'repeat', overall: verdict, scope: {}, findings: Array.from({ length: 4 }, () => ({ ...finding })) });
+      assert.equal(result.checks.length, 1, `${code} ${verdict}`);
+      const lines = result.checks[0].detail.split('\n');
+      assert.equal(lines.length, new Set(lines).size, `${code} ${verdict}: duplicate detail`);
+      assert.equal(lines.filter(line => line.startsWith('확인 기준:')).length, 1, `${code} ${verdict}: rule`);
+      assert.equal(lines.filter(line => line.startsWith('사진에서 확인한 내용:')).length, 1, `${code} ${verdict}: observation`);
+    }
+  }
+  const c4 = parseInspection({ inspection_id: 'two-observations', overall: 'normal', scope: {}, findings: [
+    { code: 'C4', verdict: 'normal', message: '점형 블록이 확인됨' },
+    { code: 'C4', verdict: 'normal', message: '돌출선 방향이 횡단보도와 일치함' },
+  ] });
+  assert.equal(c4.checks[0].detail.split('\n').filter(line => line.startsWith('사진에서 확인한 내용:')).length, 2);
+});
 test('overall status: suspected beats normal, normal beats hold, hold only stays hold', () => {
   const { parseInspection } = load('services/inspection-schema.ts');
   const f = (code, verdict) => ({ code, verdict, message: `${code} ${verdict}` });

@@ -26,10 +26,10 @@ export default function ResultScreen() {
       <Text style={s.heading}>확인 내용</Text>
       {checks.length === 0 && <Text style={s.text}>{result.summary}</Text>}
       {checks.map((check, i) => {
-        const lines = check.detail.split('\n').filter(Boolean);
+        const lines = [...new Set(check.detail.split('\n').map(line => line.trim()).filter(Boolean))];
         const description = lines.filter(line => !line.startsWith('개선 방향:') && !line.startsWith('근거:'));
-        const suggestion = lines.find(line => line.startsWith('개선 방향:'))?.replace(/^개선 방향:\s*/, '');
-        const evidence = lines.find(line => line.startsWith('근거:'))?.replace(/^근거:\s*/, '');
+        const suggestions = lines.filter(line => line.startsWith('개선 방향:')).map(line => line.replace(/^개선 방향:\s*/, ''));
+        const evidence = lines.filter(line => line.startsWith('근거:')).map(line => line.replace(/^근거:\s*/, ''));
         const name = check.title.replace(/^판정 보류\s*·\s*/, '').replace(/\s*\((판정 보류|정상|보조)\)/g, '').trim();
         const displayName = /^[A-Z]\d+$/.test(name) ? lines[0] : name;
         return <View key={check.code + i} style={{ gap: 10, paddingVertical: 8 }}>
@@ -50,10 +50,10 @@ export default function ResultScreen() {
                 </View>;
               })}
             </View>}
-            {!!suggestion && <View style={{ gap: 5, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: c.line }}><Text style={s.eyebrow}>개선 방향</Text><Text style={[s.text, { color: c.ink }]}>{suggestion}</Text></View>}
-            {!!evidence && <View style={{ backgroundColor: c.soft, borderRadius: 12, padding: 16, gap: 8 }}>
+            {suggestions.length > 0 && <View style={{ gap: 5, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: c.line }}><Text style={s.eyebrow}>개선 방향</Text>{suggestions.map((suggestion, index) => <Text key={index} style={[s.text, { color: c.ink }]}>{suggestion}</Text>)}</View>}
+            {evidence.length > 0 && <View style={{ backgroundColor: c.soft, borderRadius: 12, padding: 16, gap: 8 }}>
               <Text style={{ color: c.greenInk, fontWeight: '700', fontSize: 13 }}>근거</Text>
-              <Text style={[s.text, { color: c.ink }]}>{evidence}</Text>
+              {evidence.map((item, index) => <Text key={index} style={[s.text, { color: c.ink }]}>{item}</Text>)}
             </View>}
           </View>}
         </View>;
