@@ -38,29 +38,29 @@ test('backend InspectionResult maps to screen checks with clause, suggestion and
   const { parseInspection } = load('services/inspection-schema.ts');
   const r = parseInspection(backend);
   assert.equal(r.id, 'abc123'); assert.equal(r.status, 'suspected');
-  assert.equal(r.summary, '블록 안내가 횡단보도 입구에 닿기 전에 끝나는 것으로 보여요 외 1건');
+  assert.match(r.summary, /횡단보도 입구에 닿기 전에 끝나는 것으로 보여요.*외 1건/);
   assert.equal(r.checks.map(c => c.code).join(), 'C1,C3,H2,M');
   assert.equal(r.checks[0].title, '횡단보도 입구까지 연결 확인');
   assert.match(r.checks[0].detail, /개선 방향: 블록 안내가 횡단보도 입구까지 이어지는지 현장에서 확인해 주세요.\n근거: 「장애인등편의법 시행규칙」/);
   assert.equal(r.checks[1].title, '횡단보도 입구 방향 안내 확인 (참고)');
   assert.equal(r.checks[2].title, '사진 각도 때문에 방향은 판단하지 못했어요');
-  assert.equal(r.checks[2].detail, '시점 보정 실패로 횡단보도 진입 방향 판정 보류');
+  assert.match(r.checks[2].detail, /사진 각도 때문에 횡단보도와 블록의 진행 방향을 정확히 비교하기 어려워요/);
   assert.equal(parseInspection({ inspection_id: 'h', overall: 'hold', scope: {}, findings: [{ code: 'M3', verdict: 'hold', message: '후보 없음 (M3 대상 불명확).' }] }).checks[0].title, '꺾임·분기점 점형: 판단하지 못했어요');
   assert.equal(r.checks[3].status, 'not_applicable'); assert.equal(r.checks[3].detail, '블록 영역이 너무 작거나 없음');
 });
 test('backend format rejects unknown verdicts and malformed findings', () => {
   const { parseInspection } = load('services/inspection-schema.ts');
   for (const value of [{ ...backend, overall: 'safe' }, { ...backend, findings: null }, { ...backend, findings: [{ code: 'C1', verdict: 'bad', message: 'x' }] }]) assert.throws(() => parseInspection(value));
-  assert.equal(parseInspection({ inspection_id: 'n', overall: 'normal', scope: {}, findings: [] }).summary, '사진에서 확인한 범위에서는 설치 오류가 보이지 않아요.');
+  assert.equal(parseInspection({ inspection_id: 'n', overall: 'normal', scope: {}, findings: [] }).summary, '사진에서 확인한 항목에는 뚜렷한 설치 오류가 보이지 않아요. 항목별로 확인한 내용을 아래에서 살펴보세요.');
 });
-test('normal result shows only the reasons, without rule codes or not-applicable items', () => {
+test('normal result shows friendly explanations without rule codes or not-applicable items', () => {
   const { parseInspection, plain } = load('services/inspection-schema.ts');
   const r = parseInspection({ inspection_id: 'n', overall: 'normal', scope: { C: '판정', M: '대상 없음 (꺾임·분기점이 보이지 않음)' }, findings: [
     { code: 'C1', verdict: 'normal', message: '블록 경로가 횡단보도 입구까지 이어짐' },
     { code: 'C4', verdict: 'normal', message: '횡단보도 진입부에 점형 블록이 확인됨' },
     { code: 'C4', verdict: 'normal', message: '진입부 선형 돌출선 방향이 횡단보도 방향과 일치함' },
   ] });
-  assert.equal(r.summary, '블록 경로가 횡단보도 입구까지 이어짐 · 횡단보도 진입부에 점형 블록이 확인됨 · 진입부 선형 돌출선 방향이 횡단보도 방향과 일치함');
+  assert.equal(r.summary, '사진에서 확인한 항목에는 뚜렷한 설치 오류가 보이지 않아요. 항목별로 확인한 내용을 아래에서 살펴보세요.');
   assert.equal(r.checks.map(c => c.title).join('|'), '횡단보도 입구 연결: 문제 없어요|진입부 점형·돌출선 방향: 문제 없어요');
   assert.ok(r.checks.every(c => c.status === 'normal'));
   const held = parseInspection({ inspection_id: 'h', overall: 'hold', scope: {}, findings: [{ code: 'H2', verdict: 'hold', message: '시점 보정 실패로 돌출선 방향(C4) 판정 보류 (흰 줄 간격이 고르지 않음)' }] });
