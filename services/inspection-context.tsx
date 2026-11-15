@@ -39,7 +39,11 @@ export function InspectionProvider({ children }: { children: ReactNode }) {
             setStage(next); await new Promise<void>(resolve => setTimeout(resolve, 900));
           }
           value = demoInspection(demoStatus);
-        } else value = await createInspection(photo!, controller.signal, setStage);
+        } else {
+          value = await createInspection(photo!, controller.signal, setStage);
+          // 결과를 받은 뒤 마지막 단계를 읽을 수 있도록 잠시 표시한다.
+          await new Promise<void>(resolve => setTimeout(resolve, 900));
+        }
         if (active.current === controller && !controller.signal.aborted) setResult(value);
       } catch (e) { if (active.current === controller) setError(e instanceof Error ? e.message : '점검 요청에 실패했어요.'); }
       finally { if (active.current === controller) { active.current = null; setPending(false); } }
