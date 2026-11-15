@@ -67,6 +67,19 @@ test('normal result shows friendly explanations without rule codes or not-applic
   assert.equal(held.summary, '사진 각도 때문에 방향은 판단하지 못했어요. 횡단보도 흰 줄이 4개 이상 보이게 찍으면 방향까지 확인할 수 있어요.');
   assert.equal(plain('횡단보도가 보이지 않아 연결 판정(C1·C3·C4) 보류. 차도 직진(C2)만 확인함'), '횡단보도가 보이지 않아 연결 판정 보류. 차도 직진만 확인함');
 });
+test('overall status: suspected beats normal, normal beats hold, hold only stays hold', () => {
+  const { parseInspection } = load('services/inspection-schema.ts');
+  const f = (code, verdict) => ({ code, verdict, message: `${code} ${verdict}` });
+  const run = (overall, findings) => parseInspection({ inspection_id: 'x', overall, scope: {}, findings });
+  const normalHold = run('hold', [f('C1', 'normal'), f('H2', 'hold'), f('M3', 'normal')]);
+  assert.equal(normalHold.status, 'normal');
+  assert.ok(normalHold.checks.every(c => c.status === 'normal'));  // 정상이면 정상 이유만
+  assert.equal(run('hold', [f('H2', 'hold')]).status, 'hold');
+  assert.equal(run('suspected', [f('C2', 'suspected'), f('H2', 'hold')]).status, 'suspected');
+  assert.equal(run('suspected', [f('C1', 'normal'), f('M3', 'suspected')]).status, 'suspected');
+  assert.equal(run('suspected', [f('C1', 'normal'), f('M3', 'suspected'), f('H2', 'hold')]).status, 'suspected');
+  assert.equal(run('hold', []).status, 'hold');
+});
 test('intro is absent on first launch and remains completed after a new storage reader is created', async () => {
   const saved = new Map();
   const localStorage = { getItem: key => saved.get(key) ?? null, setItem: (key, value) => saved.set(key, value) };
