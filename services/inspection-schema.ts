@@ -194,9 +194,19 @@ function parseBackend(v: Record<string, unknown>): Inspection {
     checks.push({ code: family, title: SCOPE_TITLES[family] ?? family, status: 'not_applicable', detail: reason });
   }
   checks.sort((a, b) => ORDER[a.status] - ORDER[b.status]);
-  // 정상 추정이면 정상인 이유만 보여 준다 (미적용 항목은 숨김)
-  const shown = v.overall === 'normal' ? checks.filter(c => c.status === 'normal') : checks;
-  return { id: v.inspection_id, status: v.overall, summary: summaryOf(v.overall, findings), checks: merge(shown) };
+  const status = overallOf(findings, v.overall);
+  // 정상 추정이면 정상인 이유만 보여 준다 (보류·미적용 항목은 숨김)
+  const shown = status === 'normal' ? checks.filter(c => c.status === 'normal') : checks;
+  return { id: v.inspection_id, status, summary: summaryOf(status, findings), checks: merge(shown) };
+}
+
+// 화면에 보여 줄 종합 판정: 오류 의심이 하나라도 있으면 오류 > 정상이 하나라도 있으면 정상 > 보류만 있으면 보류.
+// 예: 입구 연결 정상 + 사진 각도 때문에 방향만 보류 → 정상 추정. 판정 항목이 없으면 서버 값을 그대로 쓴다.
+export function overallOf(findings: Finding[], fallback: InspectionStatus): InspectionStatus {
+  if (findings.some(f => f.verdict === 'suspected')) return 'suspected';
+  if (findings.some(f => f.verdict === 'normal')) return 'normal';
+  if (findings.some(f => f.verdict === 'hold')) return 'hold';
+  return fallback;
 }
 
 export function parseInspection(value: unknown): Inspection {
