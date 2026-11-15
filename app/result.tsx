@@ -19,7 +19,7 @@ export default function ResultScreen() {
     <Header action="홈으로" onAction={() => router.dismissTo('/home')} />
     <View style={s.row}><Text style={s.eyebrow}>점검 보고서{demo ? ' · 예시' : ''}</Text><Badge status={result.status} /></View>
     <Text style={s.title}>{title}</Text>
-    {result.status === 'hold' ? <Text style={s.text}>블록만 확대하지 말고 주변 동선과 연결부까지 함께 담아 주세요. 밝은 곳에서 흔들림 없이 촬영해 주세요.</Text> : <Text style={s.text}>{reportable ? checks[0]?.detail.split('\n')[0] : result.summary}</Text>}
+    {result.status === 'hold' ? <Text style={s.text}>블록만 확대하지 말고 주변 동선과 연결부까지 함께 담아 주세요. 밝은 곳에서 흔들림 없이 촬영해 주세요.</Text> : <Text style={s.text}>{result.summary}</Text>}
     {demo && <Card><Text style={s.heading}>화면 확인용 예시</Text><Text style={s.text}>선택한 사진의 실제 분석 결과가 아니에요.</Text></Card>}
     {photo && !demo ? <Image source={{ uri: photo.uri }} style={s.image} resizeMode="contain" accessibilityLabel="점검에 사용한 사진" /> : <PavingIllustration label="점검 보고서 예시" />}
     <Card>

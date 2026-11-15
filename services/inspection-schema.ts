@@ -32,15 +32,42 @@ const SUBJECTS: Record<string, string> = {
   M3: '꺾임·분기점 점형', M4: '선형 블록 연결', C1: '횡단보도 입구 연결', C2: '블록이 가리키는 방향',
   C3: '횡단보도 쪽 꺾임 안내', C4: '진입부 점형·돌출선 방향', C5: '선형 블록 유도', C6: '선형 블록 방향',
 };
+// 사용자가 확인 기준과 사진에서의 관찰 결과를 구분해 읽을 수 있도록 한다.
+// C 계열의 연결·방향 설명은 사진에서 확인하는 안내 흐름이며 법적 적합성 확정 문구가 아니다.
+const RULES: Record<string, string> = {
+  M3: '선형 블록이 시작되거나 교차·굴절되는 지점에는 방향 변화를 알리는 점형 블록이 있어야 해요.',
+  M4: '선형 블록은 보행자를 안내하는 방향을 따라 끊기지 않고 이어져야 해요.',
+  C1: '점자블록의 안내는 횡단보도 입구를 찾을 수 있도록 이어져야 해요.',
+  C2: '선형 블록은 보행자를 횡단보도 밖 차도 쪽으로 안내하지 않아야 해요.',
+  C3: '횡단보도 입구로 방향을 바꾸는 곳에서는 보행자가 방향 변화를 알아차릴 수 있어야 해요.',
+  C4: '횡단보도 입구에서는 점형 블록으로 주의할 지점을 알리고, 선형 블록은 건너는 방향을 안내해야 해요.',
+  C5: '횡단보도 앞 점형 블록까지 선형 블록의 안내가 이어져야 해요.',
+  C6: '선형 블록의 돌출선은 횡단보도를 건너는 방향으로 안내해야 해요.',
+};
 const EXPLANATIONS: Record<string, string> = {
-  M3: '선형 블록이 꺾이거나 갈라지는 곳에서 점형 블록을 확인하지 못했어요.',
-  M4: '선형 블록이 이어져야 할 구간에 끊긴 부분이 있는 것으로 보여요.',
-  C1: '블록 안내가 횡단보도 입구에 닿기 전에 끝나는 것으로 보여요.',
-  C2: '선형 블록이 횡단보도 밖 차도 쪽으로 이어지는 것으로 보여요.',
-  C3: '블록 안내가 횡단보도 입구로 이어지지 않고 옆을 지나가는 것으로 보여요.',
-  C4: '횡단보도 입구의 점형 블록이나 선형 블록의 방향을 다시 확인할 필요가 있어요.',
-  C5: '횡단보도 앞 점형 블록까지 이어지는 선형 안내를 확인하지 못했어요.',
-  C6: '선형 블록이 안내하는 방향과 횡단보도 진행 방향이 다른 것으로 보여요.',
+  M3: '사진에서 선형 블록이 꺾이거나 갈라지는 지점 주변에 점형 블록이 보이지 않아요. 길의 방향이 바뀌는 곳을 알아차리기 어려울 수 있어요. 사진에 가려졌을 가능성도 있으니 현장에서 해당 지점을 확인해 주세요.',
+  M4: '사진에서 이어져야 할 선형 블록 사이에 빈 구간이 보이는 것으로 판단했어요. 안내를 따라 걷던 사람이 길을 놓칠 수 있어요. 실제로 블록이 끊겨 있는지는 현장에서 확인해 주세요.',
+  C1: '사진에서는 선형 블록의 안내가 횡단보도 입구에 닿기 전에 끝나는 것으로 보여요. 보행자가 횡단보도 시작 지점을 찾기 어려울 수 있으니 연결 상태를 현장에서 살펴봐 주세요.',
+  C2: '사진에서 선형 블록이 횡단보도 바깥의 차도 쪽으로 이어지는 것으로 보여요. 안내를 따라 이동할 때 위험한 방향으로 갈 수 있으니 실제 진행 방향을 현장에서 확인해 주세요.',
+  C3: '사진에서는 블록 안내가 횡단보도 입구로 방향을 바꾸지 않고 옆을 지나가는 것으로 보여요. 보행자가 입구를 지나칠 수 있으니 방향 전환 지점을 확인해 주세요.',
+  C4: '사진에서 횡단보도 입구의 점형 블록 위치 또는 선형 블록이 안내하는 방향을 다시 살펴볼 필요가 있어요. 두 블록이 실제로 어디를 가리키는지 현장에서 확인해 주세요.',
+  C5: '사진에서 횡단보도 앞 점형 블록까지 이어지는 선형 블록을 확인하지 못했어요. 입구까지 안내가 이어지지 않을 수 있으니 블록 연결 상태를 현장에서 확인해 주세요.',
+  C6: '사진에서는 선형 블록이 가리키는 방향과 횡단보도를 건너는 방향이 다른 것으로 보여요. 안내를 따라갔을 때 횡단보도 안쪽으로 향하는지 현장에서 확인해 주세요.',
+};
+const NORMAL_EXPLANATIONS: Record<string, string> = {
+  M3: '사진에서 선형 블록이 꺾이거나 갈라지는 지점 주변에 점형 블록이 확인됐어요. 점형 블록은 길의 방향이 바뀌거나 갈라진다는 점을 보행자에게 알려 주는 역할을 해요. 이 사진에서 확인한 범위에서는 해당 지점의 점형 블록이 빠진 것으로 보이지 않아요.',
+  M4: '사진에서 선형 블록이 걷는 방향을 따라 이어지는 모습이 확인됐어요. 확인한 구간에서는 안내가 중간에 끊긴 것으로 보이지 않아요. 사진 밖의 구간까지 확인한 결과는 아니에요.',
+  C1: '사진에서 블록 안내가 횡단보도 입구까지 이어지는 모습이 확인됐어요. 확인한 범위에서는 입구에 닿기 전에 안내가 끝나는 것으로 보이지 않아요.',
+  C2: '사진에서 선형 블록이 횡단보도 바깥의 차도 쪽으로 곧장 안내하는 모습은 확인되지 않았어요. 사진에 보이는 방향을 기준으로 살펴본 결과예요.',
+  C3: '사진에서 블록 안내가 횡단보도 입구 쪽으로 이어지는 모습이 확인됐어요. 확인한 범위에서는 입구를 지나쳐 다른 방향으로 안내하는 것으로 보이지 않아요.',
+  C5: '사진에서 횡단보도 앞 점형 블록으로 이어지는 선형 안내가 확인됐어요. 확인한 범위에서는 입구로 가는 안내가 빠진 것으로 보이지 않아요.',
+  C6: '사진에서 선형 블록이 가리키는 방향과 횡단보도를 건너는 방향이 맞는 것으로 보여요. 실제 방향과 설치 상태는 현장에서도 확인할 수 있어요.',
+};
+const HOLD_EXPLANATIONS: Record<string, string> = {
+  H1: '사진에서 점자블록의 모양이나 위치를 충분히 구분하기 어려워 이번 항목은 판단하지 못했어요. 블록이 가려지지 않도록 밝은 곳에서 선명하게 다시 찍어 주세요.',
+  H2: '사진 각도 때문에 횡단보도와 블록의 진행 방향을 정확히 비교하기 어려워요. 횡단보도 흰 줄과 블록이 함께 보이도록 조금 뒤에서 다시 찍어 주세요.',
+  H3: '사진에 횡단보도가 충분히 보이지 않아 블록이 입구까지 이어지는지 판단하지 못했어요. 블록과 횡단보도 시작 지점을 한 장에 담아 다시 찍어 주세요.',
+  H4: '사진에서 점자블록이 너무 작게 보여 모양과 연결 상태를 구분하기 어려워요. 블록이 더 크게 보이도록 가까이에서 다시 찍되 주변 길도 함께 담아 주세요.',
 };
 const GUIDANCE: Record<string, string> = {
   M3: '꺾이거나 갈라지는 곳에 점형 블록이 필요한지 현장에서 확인해 주세요.',
@@ -92,8 +119,27 @@ function titleOf(f: Finding): string {
   return title;
 }
 
+function explanationOf(f: Finding): string {
+  const rule = RULES[f.code];
+  const withRule = (observation: string) => rule ? `확인 기준: ${rule}\n사진에서 확인한 내용: ${observation}` : observation;
+  if (f.verdict === 'suspected') return withRule(EXPLANATIONS[f.code] ?? plain(f.message));
+  if (f.verdict === 'hold') {
+    if (HOLD_EXPLANATIONS[f.code]) return HOLD_EXPLANATIONS[f.code];
+    const subject = SUBJECTS[f.code];
+    return withRule(subject
+      ? `사진만으로 ${subject} 상태를 분명하게 확인하기 어려워 이번 항목은 판단을 보류했어요. 블록과 주변 길이 함께 선명하게 보이도록 다시 찍어 주세요.`
+      : plain(f.message));
+  }
+  if (f.code === 'C4') {
+    if (/점형/.test(f.message)) return withRule('횡단보도 입구 주변의 점형 블록이 확인됐어요. 확인한 범위에서는 이 블록이 빠진 것으로 보이지 않아요.');
+    if (/돌출선|방향/.test(f.message)) return withRule('입구 주변 선형 블록의 돌출선이 횡단보도 진행 방향과 맞는 것으로 보여요. 확인한 범위에서는 안내 방향이 어긋난 것으로 보이지 않아요.');
+    return withRule('횡단보도 입구의 점형 블록과 선형 블록 안내를 확인했어요. 확인한 범위에서는 뚜렷한 설치 오류가 보이지 않아요.');
+  }
+  return withRule(NORMAL_EXPLANATIONS[f.code] ?? plain(f.message));
+}
+
 function detailOf(f: Finding): string {
-  const lines = [f.verdict === 'suspected' ? EXPLANATIONS[f.code] ?? plain(f.message) : plain(f.message)];
+  const lines = [explanationOf(f)];
   if (f.suggestion) lines.push(`개선 방향: ${GUIDANCE[f.code] ?? f.suggestion}`);
   if (f.clause) lines.push(`근거: ${BASIS[f.code] ?? f.clause}`);
   return lines.join('\n');
@@ -107,8 +153,7 @@ function summaryOf(status: InspectionStatus, findings: Finding[]): string {
     return `${suspected.length > 1 ? main.replace(/[.!?]$/, '') + ` 외 ${suspected.length - 1}건` : main}`.trim();
   }
   if (status === 'normal') {
-    const reasons = [...new Set(findings.filter(f => f.verdict === 'normal').map(f => plain(f.message)))];
-    return reasons.length ? reasons.join(' · ') : '사진에서 확인한 범위에서는 설치 오류가 보이지 않아요.';
+    return '사진에서 확인한 항목에는 뚜렷한 설치 오류가 보이지 않아요. 항목별로 확인한 내용을 아래에서 살펴보세요.';
   }
   const h = held.find(f => RETAKE[f.code]) ?? held[0];
   if (!h) return '사진만으로는 판단하기 어려워요. 다시 찍어 주세요.';
@@ -120,7 +165,10 @@ function merge(checks: Inspection['checks']): Inspection['checks'] {
   const out: Inspection['checks'] = [];
   for (const c of checks) {
     const same = out.find(o => o.title === c.title && o.status === c.status);
-    if (same) same.detail = `${same.detail}\n${c.detail}`;
+    if (same) {
+      const extra = c.detail.split('\n').filter(line => !line.startsWith('확인 기준:') || !same.detail.includes(line));
+      same.detail = [same.detail, ...extra].join('\n');
+    }
     else out.push({ ...c });
   }
   return out;
