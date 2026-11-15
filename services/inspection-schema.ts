@@ -8,14 +8,14 @@ const ORDER: Record<string, number> = { suspected: 0, hold: 1, normal: 2, not_ap
 
 // 화면에는 코드(C1 등) 대신 무엇을 봤는지 쓴다. 의심일 때는 오류 이름, 정상·보류일 때는 '무엇을 확인했는지'.
 export const CODE_TITLES: Record<string, string> = {
-  M3: '꺾임·분기점에 점형 블록이 없어요',
-  M4: '선형 블록 경로가 끊겨 있어요',
-  C1: '블록이 횡단보도 입구까지 이어지지 않아요',
-  C2: '블록이 차도 쪽을 가리켜요 (위험)',
-  C3: '횡단보도 쪽으로 꺾는 안내가 없어요',
-  C4: '횡단보도 진입부 점형·방향이 맞지 않아요',
-  C5: '점형만 있고 길을 이끄는 선형 블록이 없어요',
-  C6: '선형 블록 방향이 횡단보도와 어긋나요',
+  M3: '꺾임·갈림길의 점형 블록 확인',
+  M4: '선형 블록이 끊긴 곳 확인',
+  C1: '횡단보도 입구까지 연결 확인',
+  C2: '차도 쪽으로 향하는 안내 확인',
+  C3: '횡단보도 입구 방향 안내 확인',
+  C4: '입구의 점형 블록·방향 확인',
+  C5: '입구까지 이어지는 선형 안내 확인',
+  C6: '선형 블록의 진행 방향 확인',
   H1: '블록이 잘 보이지 않아 판단하지 못했어요',
   H2: '사진 각도 때문에 방향은 판단하지 못했어요',
   H3: '횡단보도가 보이지 않아 연결은 판단하지 못했어요',
@@ -31,6 +31,37 @@ const RETAKE: Record<string, string> = {
 const SUBJECTS: Record<string, string> = {
   M3: '꺾임·분기점 점형', M4: '선형 블록 연결', C1: '횡단보도 입구 연결', C2: '블록이 가리키는 방향',
   C3: '횡단보도 쪽 꺾임 안내', C4: '진입부 점형·돌출선 방향', C5: '선형 블록 유도', C6: '선형 블록 방향',
+};
+const EXPLANATIONS: Record<string, string> = {
+  M3: '선형 블록이 꺾이거나 갈라지는 곳에서 점형 블록을 확인하지 못했어요.',
+  M4: '선형 블록이 이어져야 할 구간에 끊긴 부분이 있는 것으로 보여요.',
+  C1: '블록 안내가 횡단보도 입구에 닿기 전에 끝나는 것으로 보여요.',
+  C2: '선형 블록이 횡단보도 밖 차도 쪽으로 이어지는 것으로 보여요.',
+  C3: '블록 안내가 횡단보도 입구로 이어지지 않고 옆을 지나가는 것으로 보여요.',
+  C4: '횡단보도 입구의 점형 블록이나 선형 블록의 방향을 다시 확인할 필요가 있어요.',
+  C5: '횡단보도 앞 점형 블록까지 이어지는 선형 안내를 확인하지 못했어요.',
+  C6: '선형 블록이 안내하는 방향과 횡단보도 진행 방향이 다른 것으로 보여요.',
+};
+const GUIDANCE: Record<string, string> = {
+  M3: '꺾이거나 갈라지는 곳에 점형 블록이 필요한지 현장에서 확인해 주세요.',
+  M4: '끊긴 것으로 보이는 구간을 확인하고, 필요한 경우 선형 블록을 이어 주세요.',
+  C1: '블록 안내가 횡단보도 입구까지 이어지는지 현장에서 확인해 주세요.',
+  C2: '차도 쪽으로 향하는 안내를 확인하고 횡단보도 방향으로 유도되도록 살펴봐 주세요.',
+  C3: '횡단보도 입구로 방향을 바꾸는 지점의 안내를 확인해 주세요.',
+  C4: '입구의 점형 블록과 선형 블록 돌출선 방향을 각각 확인해 주세요.',
+  C5: '입구의 점형 블록까지 선형 안내가 이어지는지 확인해 주세요.',
+  C6: '선형 블록이 횡단보도 진행 방향으로 안내하는지 확인해 주세요.',
+};
+const LAW = '「장애인등편의법 시행규칙」 별표 1 제16호';
+const BASIS: Record<string, string> = {
+  M3: `${LAW}: 선형 블록이 시작·교차·굴절되는 곳에는 점형 블록을 설치하도록 정하고 있어요.`,
+  M4: `${LAW}: 선형 블록은 유도 방향에 따라 이어서 설치하도록 정하고 있어요.`,
+  C1: `${LAW}의 선형 블록 연속 설치 원칙을 참고해 횡단보도 입구와의 연결을 살펴봤어요.`,
+  C2: `${LAW}의 선형 블록 유도 방향 원칙을 참고해 차도 쪽 진행을 살펴봤어요.`,
+  C3: `${LAW}의 점형 블록 설치 위치와 선형 블록 유도 원칙을 참고했어요.`,
+  C4: `${LAW}의 점형 블록 설치 위치와 선형 돌출선 방향 기준을 참고했어요.`,
+  C5: `${LAW}의 선형 블록 연속 설치 원칙을 참고했어요.`,
+  C6: `${LAW}의 선형 블록 유도 방향 원칙을 참고했어요.`,
 };
 
 const SCOPE_TITLES: Record<string, string> = { C: '횡단보도 연결·방향', M: '블록 모양 (꺾임·분기점)' };
@@ -62,9 +93,9 @@ function titleOf(f: Finding): string {
 }
 
 function detailOf(f: Finding): string {
-  const lines = [plain(f.message)];
-  if (f.suggestion) lines.push(`이렇게 고치면 돼요: ${f.suggestion}`);
-  if (f.clause) lines.push(`근거: ${f.clause}`);
+  const lines = [f.verdict === 'suspected' ? EXPLANATIONS[f.code] ?? plain(f.message) : plain(f.message)];
+  if (f.suggestion) lines.push(`개선 방향: ${GUIDANCE[f.code] ?? f.suggestion}`);
+  if (f.clause) lines.push(`근거: ${BASIS[f.code] ?? f.clause}`);
   return lines.join('\n');
 }
 
@@ -72,7 +103,8 @@ function summaryOf(status: InspectionStatus, findings: Finding[]): string {
   const suspected = findings.filter(f => f.verdict === 'suspected'), held = findings.filter(f => f.verdict === 'hold');
   if (status === 'suspected') {
     const first = suspected.find(f => f.primary !== false) ?? suspected[0];
-    return `${plain(first?.message ?? '')}${suspected.length > 1 ? ` 외 ${suspected.length - 1}건` : ''}`.trim();
+    const main = first ? EXPLANATIONS[first.code] ?? plain(first.message) : '';
+    return `${suspected.length > 1 ? main.replace(/[.!?]$/, '') + ` 외 ${suspected.length - 1}건` : main}`.trim();
   }
   if (status === 'normal') {
     const reasons = [...new Set(findings.filter(f => f.verdict === 'normal').map(f => plain(f.message)))];
