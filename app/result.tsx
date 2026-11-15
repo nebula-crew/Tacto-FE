@@ -27,7 +27,7 @@ export default function ResultScreen() {
       {checks.length === 0 && <Text style={s.text}>{result.summary}</Text>}
       {checks.map((check, i) => {
         const lines = check.detail.split('\n').filter(Boolean);
-        const description = lines.filter(line => !line.startsWith('개선 방향:') && !line.startsWith('근거:')).join('\n');
+        const description = lines.filter(line => !line.startsWith('개선 방향:') && !line.startsWith('근거:'));
         const suggestion = lines.find(line => line.startsWith('개선 방향:'))?.replace(/^개선 방향:\s*/, '');
         const evidence = lines.find(line => line.startsWith('근거:'))?.replace(/^근거:\s*/, '');
         const name = check.title.replace(/^판정 보류\s*·\s*/, '').replace(/\s*\((판정 보류|정상|보조)\)/g, '').trim();
@@ -35,7 +35,21 @@ export default function ResultScreen() {
         return <View key={check.code + i} style={{ gap: 10, paddingVertical: 8 }}>
           <View style={s.row}><Badge status={check.status} /><Text style={{ color: c.ink, fontSize: 15, fontWeight: '600', flexShrink: 1 }}>{displayName}</Text></View>
           {expanded && <View style={{ gap: 16, paddingTop: 6 }}>
-            {!!description && <View style={{ gap: 5, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: c.line }}><Text style={s.eyebrow}>자세한 설명</Text><Text style={[s.text, { color: c.ink }]}>{description}</Text></View>}
+            {description.length > 0 && <View style={{ gap: 12, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: c.line }}>
+              <Text style={s.eyebrow}>자세한 설명</Text>
+              {description.map((line, index) => {
+                const labeled = line.startsWith('확인 기준:') || line.startsWith('사진에서 확인한 내용:');
+                const label = line.startsWith('확인 기준:') ? '확인 기준' : '사진에서 확인한 내용';
+                const content = labeled ? line.slice(line.indexOf(':') + 1).trim() : line;
+                return <View key={index} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.greenInk, marginTop: 9 }} />
+                  <View style={{ flex: 1, gap: 3 }}>
+                    {labeled && <Text style={{ color: c.greenInk, fontSize: 12, fontWeight: '600' }}>{label}</Text>}
+                    <Text style={[s.text, { color: c.ink }]}>{content}</Text>
+                  </View>
+                </View>;
+              })}
+            </View>}
             {!!suggestion && <View style={{ gap: 5, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: c.line }}><Text style={s.eyebrow}>개선 방향</Text><Text style={[s.text, { color: c.ink }]}>{suggestion}</Text></View>}
             {!!evidence && <View style={{ backgroundColor: c.soft, borderRadius: 12, padding: 16, gap: 8 }}>
               <Text style={{ color: c.greenInk, fontWeight: '700', fontSize: 13 }}>근거</Text>

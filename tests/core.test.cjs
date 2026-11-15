@@ -41,7 +41,7 @@ test('backend InspectionResult maps to screen checks with clause, suggestion and
   assert.match(r.summary, /횡단보도 입구에 닿기 전에 끝나는 것으로 보여요.*외 1건/);
   assert.equal(r.checks.map(c => c.code).join(), 'C1,C3,H2,M');
   assert.equal(r.checks[0].title, '횡단보도 입구까지 연결 확인');
-  assert.match(r.checks[0].detail, /개선 방향: 블록 안내가 횡단보도 입구까지 이어지는지 현장에서 확인해 주세요.\n근거: 「장애인등편의법 시행규칙」/);
+  assert.match(r.checks[0].detail, /개선 방향: 선형 블록이 횡단보도 입구까지 이어져 보행자가 건너기 시작하는 지점을 찾을 수 있어야 해요.\n근거: 「장애인등편의법 시행규칙」/);
   assert.equal(r.checks[1].title, '횡단보도 입구 방향 안내 확인 (참고)');
   assert.equal(r.checks[2].title, '사진 각도 때문에 방향은 판단하지 못했어요');
   assert.match(r.checks[2].detail, /사진 각도 때문에 횡단보도와 블록의 진행 방향을 정확히 비교하기 어려워요/);
