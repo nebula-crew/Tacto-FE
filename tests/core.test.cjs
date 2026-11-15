@@ -38,11 +38,11 @@ test('backend InspectionResult maps to screen checks with clause, suggestion and
   const { parseInspection } = load('services/inspection-schema.ts');
   const r = parseInspection(backend);
   assert.equal(r.id, 'abc123'); assert.equal(r.status, 'suspected');
-  assert.equal(r.summary, '블록이 횡단보도 쪽을 향하지만 입구까지 이어지지 않음 외 1건');
+  assert.equal(r.summary, '블록 안내가 횡단보도 입구에 닿기 전에 끝나는 것으로 보여요 외 1건');
   assert.equal(r.checks.map(c => c.code).join(), 'C1,C3,H2,M');
-  assert.equal(r.checks[0].title, '블록이 횡단보도 입구까지 이어지지 않아요');
-  assert.match(r.checks[0].detail, /이렇게 고치면 돼요: 블록 경로를 횡단보도 입구까지 연장\n근거: 장애인등편의법/);
-  assert.equal(r.checks[1].title, '횡단보도 쪽으로 꺾는 안내가 없어요 (참고)');
+  assert.equal(r.checks[0].title, '횡단보도 입구까지 연결 확인');
+  assert.match(r.checks[0].detail, /개선 방향: 블록 안내가 횡단보도 입구까지 이어지는지 현장에서 확인해 주세요.\n근거: 「장애인등편의법 시행규칙」/);
+  assert.equal(r.checks[1].title, '횡단보도 입구 방향 안내 확인 (참고)');
   assert.equal(r.checks[2].title, '사진 각도 때문에 방향은 판단하지 못했어요');
   assert.equal(r.checks[2].detail, '시점 보정 실패로 횡단보도 진입 방향 판정 보류');
   assert.equal(parseInspection({ inspection_id: 'h', overall: 'hold', scope: {}, findings: [{ code: 'M3', verdict: 'hold', message: '후보 없음 (M3 대상 불명확).' }] }).checks[0].title, '꺾임·분기점 점형: 판단하지 못했어요');

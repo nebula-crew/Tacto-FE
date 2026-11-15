@@ -13,7 +13,7 @@ export default function ResultScreen() {
 
   const reportable = result.status === 'suspected';
   const checks = result.checks.filter(check => check.status === result.status);
-  const title = reportable ? '설치 오류가 의심돼요' : result.status === 'normal' ? '올바르게 설치되어 있어요' : '사진을 다시 찍어주세요';
+  const title = reportable ? '설치 상태를 확인해 주세요' : result.status === 'normal' ? '뚜렷한 오류가 보이지 않아요' : '사진을 다시 찍어주세요';
 
   return <Screen>
     <Header action="홈으로" onAction={() => router.dismissTo('/home')} />
@@ -47,6 +47,6 @@ export default function ResultScreen() {
       {checks.length > 0 && <Pressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={s.link}><Text style={{ color: c.greenInk, fontWeight: '600' }}>{expanded ? '상세 보고서 접기 −' : '상세 보고서 보기 ＋'}</Text></Pressable>}
     </Card>
     {reportable && <View style={{ gap: 12 }}><Text style={s.heading}>확인이 필요한 곳을 알려주세요</Text><Text style={s.text}>잘못된 배치가 의심된다면 사진과 위치를 정리해 신고를 준비할 수 있어요.</Text></View>}
-    <View style={s.footer}>{reportable && <Button title="시설물 신고하기" onPress={() => router.push('/report')} />}<Button title="다른 사진 점검하기" secondary={reportable} onPress={() => router.dismissTo('/home')} /><Text style={[s.text, { fontSize: 12 }]}>사진 기반 참고 결과예요. 정상 추정도 설치 기준 충족이나 보행 안전을 보장하지 않아요.</Text></View>
+    <View style={[s.footer, { marginTop: 0 }]}>{reportable && <Button title="시설물 신고하기" onPress={() => router.push('/report')} />}<Button title="다른 사진 점검하기" secondary={reportable} onPress={() => router.dismissTo('/home')} /><Text style={[s.text, { fontSize: 12 }]}>사진 기반 참고 결과예요. 정상 추정도 설치 기준 충족이나 보행 안전을 보장하지 않아요.</Text></View>
   </Screen>;
 }
