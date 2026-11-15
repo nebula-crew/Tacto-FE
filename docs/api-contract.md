@@ -28,14 +28,15 @@
 | --- | --- |
 | `id` | `inspection_id` |
 | `status` | `overall` (`suspected` 오류 의심 · `normal` 정상 추정 · `hold` 판정 보류) |
-| `summary` | 앱이 만듦: "오류 의심 N건 · 보류 M건. (첫 의심 판정 메시지)" / 정상 문구 / 첫 보류 메시지 |
+| `summary` | 앱이 만듦: 의심이면 "첫 의심 판정 메시지 외 N건", 정상이면 정상 판정 메시지(이유)들을 " · "로 이음, 보류면 첫 보류 메시지 |
 | `checks[].code` | `findings[].code` |
-| `checks[].title` | 코드별 화면 이름 (`CODE_TITLES`). `primary: false`면 "(보조)" |
+| `checks[].title` | 코드는 보여 주지 않음. 의심이면 오류 설명(`CODE_TITLES`, 예: "블록이 횡단보도 입구까지 이어지지 않아요"), 정상·보류면 "확인한 것: 문제 없어요 / 판단하지 못했어요". `primary: false`면 "(참고)" |
 | `checks[].status` | `findings[].verdict` |
 | `checks[].detail` | `message` + "개선 방향: `suggestion`" + "근거: `clause`" |
 | `not_applicable` 항목 | `scope`가 "해당 없음 / 건너뜀 / 대상 없음 (이유)"인 계열 (C·M) |
 
-항목 순서는 의심 → 보류 → 정상 → 미적용입니다.
+항목 순서는 의심 → 보류 → 정상 → 미적용입니다. 정상 추정이면 정상 항목(이유)만 보여 줍니다. 같은 제목·판정 항목은 하나로 합칩니다.
+서버 메시지 안의 규칙 코드 표기(예: "(C4)", "(M3 대상 불명확)")는 화면에서 지웁니다 (`plain`).
 
 예전 화면 계약(`{ id, status, summary, checks }`)도 그대로 받습니다 (예시 데이터·테스트용).
 
