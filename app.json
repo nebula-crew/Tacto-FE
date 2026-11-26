@@ -37,6 +37,12 @@
           "photosPermission": "Allow tacto to select an inspection photo.",
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow tacto to save where an inspection photo was taken."
+        }
       ]
     ],
     "extra": {

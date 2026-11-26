@@ -1,10 +1,10 @@
 import { Platform } from 'react-native';
 import { parseInspection } from './inspection-schema';
-import type { Inspection, Photo } from '../types/inspection';
+import type { Coords, Inspection, Photo } from '../types/inspection';
 export { parseInspection } from './inspection-schema';
 export type RequestStage = 'preparing' | 'waiting' | 'report';
 export const API_URL = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/$/, '') ?? '';
-export async function createInspection(photo: Photo, signal: AbortSignal, onStage: (stage: RequestStage) => void): Promise<Inspection> {
+export async function createInspection(photo: Photo, signal: AbortSignal, onStage: (stage: RequestStage) => void, coords: Coords | null = null): Promise<Inspection> {
   if (!API_URL) throw new Error('서버 주소가 없어요. EXPO_PUBLIC_API_URL 설정 후 다시 실행해 주세요.');
   const controller = new AbortController();
   const cancel = () => controller.abort();
@@ -19,6 +19,8 @@ export async function createInspection(photo: Photo, signal: AbortSignal, onStag
       const file = photo.file ?? await (await fetch(photo.uri, { signal: controller.signal })).blob();
       form.append('photo', file, photo.name);
     } else form.append('photo', { uri: photo.uri, name: photo.name, type: photo.mimeType } as unknown as Blob);
+    // 촬영 위치 (선택). 서버가 점검 건에 lat·lng로 함께 저장한다. BE docs/API.md 점검 요청.
+    if (coords) { form.append('lat', String(coords.lat)); form.append('lng', String(coords.lng)); }
     onStage('waiting');
     const response = await fetch(`${API_URL}/api/inspections`, { method: 'POST', body: form, signal: controller.signal });
     if (!response.ok) throw new Error(`분석 요청을 완료하지 못했어요. (HTTP ${response.status})`);
@@ -32,7 +34,8 @@ export async function createInspection(photo: Photo, signal: AbortSignal, onStag
   } finally { clearTimeout(timeout); signal.removeEventListener('abort', cancel); }
 }
 
-export type ReportInput = { address: string; memo?: string };
+// lat·lng는 촬영 위치. 서버는 신고 접수 때 받은 값으로 위치를 덮어쓰므로, 촬영 위치가 있으면 같이 보내야 지워지지 않는다.
+export type ReportInput = { address: string; memo?: string; lat?: number; lng?: number };
 
 // 신고 접수: 발견 위치·내용을 점검 건에 저장한다 (관리자 신고 목록에 나옴). BE docs/API.md 신고 접수.
 export async function submitReport(inspectionId: string, input: ReportInput): Promise<void> {

@@ -25,6 +25,7 @@ export default function InspectionScreen() {
       <Text style={s.eyebrow}>사진 확인</Text>
       <Text style={[s.title, i.title, compact && i.compactTitle]}>이 사진으로 점검할까요?</Text>
       <Text style={[s.text, i.description]}>주변 길과 블록의 연결이 잘 보이는지 확인해 주세요.</Text>
+      {(state.locating || state.coords) && <Text accessibilityLiveRegion="polite" style={[s.text, i.location]}>{state.coords ? '촬영 위치가 점검 기록에 함께 저장돼요.' : '촬영 위치를 확인하고 있어요…'}</Text>}
     </View>
     <Image accessibilityLabel="선택한 점검 사진" source={{ uri: state.photo.uri }} style={[i.photo, compact && i.compactPhoto, short && i.shortPhoto]} resizeMode="contain" />
     <ErrorMessage message={picker.error || state.error} />
@@ -46,6 +47,7 @@ const i = StyleSheet.create({
   title: { fontSize: 24, lineHeight: 34 },
   compactTitle: { fontSize: 21, lineHeight: 30 },
   description: { lineHeight: 21 },
+  location: { fontSize: 12, lineHeight: 18, color: c.greenInk },
   photo: { flex: 1, minHeight: 120, width: '100%', borderRadius: 18, backgroundColor: c.paper, marginBottom: 24 },
   compactPhoto: { minHeight: 100, marginBottom: 20 },
   shortPhoto: { minHeight: 80, marginBottom: 16 },

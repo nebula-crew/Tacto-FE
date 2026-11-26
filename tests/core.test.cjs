@@ -162,3 +162,44 @@ test('report submit posts JSON location to the inspection and surfaces server re
   api = load('services/api.ts', {}, { fetch: async () => { throw new TypeError('fail'); } });
   await assert.rejects(api.submitReport('x', { address: 'a' }), /연결할 수 없어요/);
 });
+test('camera photo upload adds lat/lng fields next to the photo; no coords sends photo only', async () => {
+  const bodies = [];
+  const api = load('services/api.ts', {}, { fetch: async (_url, options) => { bodies.push(options.body); return { ok: true, json: async () => valid }; } });
+  const photo = { uri: 'unused', name: 'photo.jpg', mimeType: 'image/jpeg', file: new Blob(['image']) };
+  await api.createInspection(photo, new AbortController().signal, () => {}, { lat: 37.566535, lng: 126.977969 });
+  assert.equal([...bodies[0].keys()].join(), 'photo,lat,lng');
+  assert.equal(bodies[0].get('lat'), '37.566535'); assert.equal(bodies[0].get('lng'), '126.977969');
+  await api.createInspection(photo, new AbortController().signal, () => {}, null);
+  assert.equal([...bodies[1].keys()].join(), 'photo');
+});
+test('report keeps the capture coordinates so the server does not clear them', async () => {
+  let body;
+  const api = load('services/api.ts', {}, { fetch: async (_url, options) => { body = JSON.parse(options.body); return { ok: true, status: 200 }; } });
+  await api.submitReport('id', { address: '정문 앞 횡단보도', memo: '확인 요청', lat: 37.5, lng: 127.1 });
+  assert.deepEqual(body, { address: '정문 앞 횡단보도', memo: '확인 요청', lat: 37.5, lng: 127.1 });
+});
+function locationModule(location) {
+  return load('services/location.ts', { 'expo-location': { Accuracy: { Balanced: 3 }, ...location } });
+}
+test('location: granted permission returns rounded coordinates within server range', async () => {
+  const loc = locationModule({
+    requestForegroundPermissionsAsync: async () => ({ granted: true }),
+    getCurrentPositionAsync: async () => ({ coords: { latitude: 37.56653512345, longitude: 126.97796912345 } }),
+  });
+  assert.deepEqual({ ...(await loc.getCurrentCoords()) }, { lat: 37.566535, lng: 126.977969 });
+  assert.equal(loc.toCoords(91, 0), null); assert.equal(loc.toCoords(0, -181), null);
+  assert.equal(loc.toCoords(Number.NaN, 0), null); assert.equal(loc.toCoords('37', 127), null);
+});
+test('location: denied permission, errors and timeouts all fall back to no location', async () => {
+  let asked = false;
+  let loc = locationModule({ requestForegroundPermissionsAsync: async () => ({ granted: false }), getCurrentPositionAsync: async () => { asked = true; } });
+  assert.equal(await loc.getCurrentCoords(), null); assert.equal(asked, false);
+  loc = locationModule({ requestForegroundPermissionsAsync: async () => ({ granted: true }), getCurrentPositionAsync: async () => { throw new Error('unavailable'); } });
+  assert.equal(await loc.getCurrentCoords(), null);
+  loc = locationModule({ requestForegroundPermissionsAsync: async () => ({ granted: true }), getCurrentPositionAsync: () => new Promise(() => {}) });
+  assert.equal(await loc.getCurrentCoords(20), null);
+  assert.equal(await loc.settleWithin(new Promise(() => {}), 20), null);
+  assert.equal(await loc.settleWithin(Promise.reject(new Error('x')), 20), null);
+  assert.equal(await loc.settleWithin(null, 20), null);
+  assert.deepEqual({ ...(await loc.settleWithin(Promise.resolve({ lat: 1, lng: 2 }), 1000)) }, { lat: 1, lng: 2 });
+});
