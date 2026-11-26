@@ -178,6 +178,12 @@ test('report keeps the capture coordinates so the server does not clear them', a
   await api.submitReport('id', { address: '정문 앞 횡단보도', memo: '확인 요청', lat: 37.5, lng: 127.1 });
   assert.deepEqual(body, { address: '정문 앞 횡단보도', memo: '확인 요청', lat: 37.5, lng: 127.1 });
 });
+test('admin map link uses capture coordinates and skips missing or invalid ones', () => {
+  const { mapUrl } = load('services/admin-api.ts');
+  assert.equal(mapUrl({ address: '정문 앞, 횡단보도', lat: 37.566535, lng: 126.977969 }), `https://map.kakao.com/link/map/${encodeURIComponent('정문 앞  횡단보도')},37.566535,126.977969`);
+  assert.equal(mapUrl({ lat: 37.5, lng: 127 }), `https://map.kakao.com/link/map/${encodeURIComponent('신고 위치')},37.5,127`);
+  for (const loc of [null, undefined, { address: '주소만' }, { lat: 37.5, lng: null }, { lat: 91, lng: 0 }, { lat: Number.NaN, lng: 1 }]) assert.equal(mapUrl(loc), null);
+});
 function locationModule(location) {
   return load('services/location.ts', { 'expo-location': { Accuracy: { Balanced: 3 }, ...location } });
 }
