@@ -71,6 +71,15 @@ export function photoUrl(r: ReportSummary): string | null {
   return r.photo_url ? `${API_URL}${r.photo_url}` : null;
 }
 
+// 촬영 좌표로 카카오맵 핀 링크를 만든다 (API 키 없이 쓰는 공개 URL, 호출 비용 없음). 좌표가 없거나 범위 밖이면 null.
+export function mapUrl(loc?: Location | null): string | null {
+  const lat = loc?.lat, lng = loc?.lng;
+  if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  const name = (loc?.address?.trim() || '신고 위치').replace(/,/g, ' ');
+  return `https://map.kakao.com/link/map/${encodeURIComponent(name)},${lat},${lng}`;
+}
+
 // 접수 시각 표시: "11/15 16:30"
 export function formatTime(iso?: string | null): string {
   if (!iso) return '';
