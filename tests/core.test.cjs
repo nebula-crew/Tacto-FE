@@ -196,6 +196,19 @@ test('admin analysis image sends the token, returns a data URL, and treats 404 a
   api = load('services/admin-api.ts', {}, { FileReader, fetch: async () => ({ ok: false, status: 401 }) });
   await assert.rejects(api.getAnalysisImage('bad', 'x'), /토큰/);
 });
+test('admin detail keeps raw rule findings (code, clause) sorted suspected → hold → normal, plus scope', () => {
+  const { toDetail, RULE_NAMES } = load('services/admin-api.ts');
+  const d = toDetail({ inspection_id: 'r1', overall: 'suspected', status: 'received', codes: ['C4'], result: { ...backend, findings: [
+    { code: 'C1', verdict: 'normal', message: '블록 경로가 횡단보도 입구까지 이어짐' },
+    { code: 'H2', verdict: 'hold', message: '시점 보정 실패' },
+    { code: 'C4', verdict: 'suspected', message: '입구 점형 없음', clause: '별표 1 제16호', suggestion: '점형 설치' },
+  ] } });
+  assert.equal(d.findings.map(f => f.code).join(), 'C4,H2,C1');
+  assert.equal(d.findings[0].clause, '별표 1 제16호');
+  assert.deepEqual({ ...d.scope }, { C: '판정', M: '건너뜀 (블록 영역이 너무 작거나 없음)' });
+  assert.equal(d.inspection.id, 'abc123');  // 시민용 변환 결과도 그대로
+  for (const code of ['M3', 'M4', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'H1', 'H2', 'H3', 'H4']) assert.ok(RULE_NAMES[code], code);
+});
 function locationModule(location) {
   return load('services/location.ts', { 'expo-location': { Accuracy: { Balanced: 3 }, ...location } });
 }

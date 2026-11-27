@@ -13,7 +13,35 @@ export type ReportSummary = {
   inspection_id: string; created_at?: string | null; overall: InspectionStatus; status: ReportStatus;
   codes: string[]; location?: Location | null; photo_url?: string | null;
 };
-export type ReportDetail = ReportSummary & { admin_memo?: string | null; updated_at?: string | null; inspection: Inspection };
+// 서버 판정 원본 한 줄 (관리자는 규칙 코드·조항까지 그대로 본다. 시민 앱은 inspection-schema가 쉬운 말로 바꿔 보여 줌)
+export type RuleFinding = {
+  code: string; verdict: 'suspected' | 'normal' | 'hold'; message: string;
+  clause?: string | null; suggestion?: string | null; primary?: boolean; confidence?: number | null;
+};
+export type ReportDetail = ReportSummary & {
+  admin_memo?: string | null; updated_at?: string | null; inspection: Inspection;
+  findings: RuleFinding[]; scope: Record<string, string>;
+};
+
+// 관리자 화면용 규칙 이름 (BE pipeline/rules 기준). M = 블록 모양, C = 횡단보도 연결·방향, H = 판정 보류 사유
+export const RULE_NAMES: Record<string, string> = {
+  M3: '꺾임·분기점 점형 블록', M4: '선형 블록 끊김',
+  C1: '횡단보도 입구까지 연결', C2: '차도 쪽으로 유도', C3: '횡단보도 쪽 꺾임 안내', C4: '입구 점형 블록·돌출선 방향',
+  C5: '입구까지 선형 유도', C6: '선형 블록 진행 방향',
+  H1: '블록 인식 불확실', H2: '시점 보정 실패 (방향 판정 보류)', H3: '횡단보도·차도 미확인', H4: '블록이 너무 작게 찍힘',
+};
+export const RULE_FAMILIES: Record<string, string> = { M: '블록 모양', C: '횡단보도 연결·방향' };
+const VERDICT_ORDER = { suspected: 0, hold: 1, normal: 2 } as const;
+
+function toFindings(result: unknown): { findings: RuleFinding[]; scope: Record<string, string> } {
+  const r = (result ?? {}) as { findings?: unknown; scope?: unknown };
+  const raw = Array.isArray(r.findings) ? r.findings : [];
+  const findings = raw.filter((f): f is RuleFinding => !!f && typeof f === 'object' && typeof (f as RuleFinding).code === 'string'
+    && typeof (f as RuleFinding).message === 'string' && (f as RuleFinding).verdict in VERDICT_ORDER)
+    .sort((x, y) => VERDICT_ORDER[x.verdict] - VERDICT_ORDER[y.verdict] || x.code.localeCompare(y.code));
+  const scope = r.scope && typeof r.scope === 'object' ? Object.fromEntries(Object.entries(r.scope).filter(([, v]) => typeof v === 'string')) as Record<string, string> : {};
+  return { findings, scope };
+}
 
 const TOKEN_KEY = 'tacto-admin-token';
 let memoryToken = '';
@@ -51,10 +79,10 @@ export function listReports(token: string, onlyReported: boolean): Promise<Repor
     onlyReported ? rows.filter(r => !!r.location?.address) : rows);
 }
 
-type RawDetail = Omit<ReportDetail, 'inspection'> & { result: unknown };
-function toDetail(raw: RawDetail): ReportDetail {
+type RawDetail = Omit<ReportDetail, 'inspection' | 'findings' | 'scope'> & { result: unknown };
+export function toDetail(raw: RawDetail): ReportDetail {
   const { result, ...rest } = raw;
-  return { ...rest, inspection: parseInspection(result) };
+  return { ...rest, inspection: parseInspection(result), ...toFindings(result) };
 }
 
 export async function getReport(token: string, id: string): Promise<ReportDetail> {
