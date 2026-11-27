@@ -67,6 +67,33 @@ export async function updateReport(token: string, id: string, change: { status?:
   }));
 }
 
+// 관리자용 AI 분석 이미지 (영역·중심선·연장선·판정 위치를 겹친 사진). 토큰 헤더가 필요해 <Image uri>로 바로 못 불러서
+// 받아서 data URL로 바꿔 준다. 이 기능 전에 접수된 점검은 이미지가 없어 null.
+export async function getAnalysisImage(token: string, id: string): Promise<string | null> {
+  if (!API_URL) throw new Error('서버 주소가 없어요. EXPO_PUBLIC_API_URL 설정 후 다시 실행해 주세요.');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api/admin/inspections/${encodeURIComponent(id)}/analysis`, { headers: { 'X-Admin-Token': token }, signal: controller.signal });
+  } catch {
+    throw new Error(controller.signal.aborted ? '응답이 늦어지고 있어요. 잠시 후 다시 시도해 주세요.' : '서버에 연결할 수 없어요. 네트워크를 확인해 주세요.');
+  } finally { clearTimeout(timeout); }
+  if (response.status === 404) return null;
+  if (response.status === 401) throw new AdminAuthError('관리자 토큰이 맞지 않아요.');
+  if (!response.ok) throw new Error(`분석 이미지를 불러오지 못했어요. (HTTP ${response.status})`);
+  return blobToDataUrl(await response.blob());
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('분석 이미지를 읽지 못했어요.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export function photoUrl(r: ReportSummary): string | null {
   return r.photo_url ? `${API_URL}${r.photo_url}` : null;
 }

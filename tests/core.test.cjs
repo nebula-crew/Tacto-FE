@@ -184,6 +184,18 @@ test('admin map link uses capture coordinates and skips missing or invalid ones'
   assert.equal(mapUrl({ lat: 37.5, lng: 127 }), `https://map.kakao.com/link/map/${encodeURIComponent('신고 위치')},37.5,127`);
   for (const loc of [null, undefined, { address: '주소만' }, { lat: 37.5, lng: null }, { lat: 91, lng: 0 }, { lat: Number.NaN, lng: 1 }]) assert.equal(mapUrl(loc), null);
 });
+test('admin analysis image sends the token, returns a data URL, and treats 404 as no image', async () => {
+  class FileReader { readAsDataURL(blob) { blob.arrayBuffer().then(b => { this.result = 'data:' + blob.type + ';base64,' + Buffer.from(b).toString('base64'); this.onload(); }); } }
+  let sent;
+  let api = load('services/admin-api.ts', {}, { FileReader, fetch: async (url, options) => { sent = { url, options }; return { ok: true, status: 200, blob: async () => new Blob(['jpg'], { type: 'image/jpeg' }) }; } });
+  assert.equal(await api.getAnalysisImage('tok', 'id/1'), 'data:image/jpeg;base64,' + Buffer.from('jpg').toString('base64'));
+  assert.equal(sent.url, 'http://example.test:8000/api/admin/inspections/id%2F1/analysis');
+  assert.equal(sent.options.headers['X-Admin-Token'], 'tok');
+  api = load('services/admin-api.ts', {}, { FileReader, fetch: async () => ({ ok: false, status: 404 }) });
+  assert.equal(await api.getAnalysisImage('tok', 'old'), null);
+  api = load('services/admin-api.ts', {}, { FileReader, fetch: async () => ({ ok: false, status: 401 }) });
+  await assert.rejects(api.getAnalysisImage('bad', 'x'), /토큰/);
+});
 function locationModule(location) {
   return load('services/location.ts', { 'expo-location': { Accuracy: { Balanced: 3 }, ...location } });
 }

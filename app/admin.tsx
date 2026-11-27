@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import Head from 'expo-router/head';
 import { labels as checkLabels } from '../components/ui';
 import {
-  AdminAuthError, REPORT_STATUSES, REPORT_STATUS_LABELS, getReport, listReports, loadToken, mapUrl, photoUrl, saveToken, updateReport,
+  AdminAuthError, REPORT_STATUSES, REPORT_STATUS_LABELS, getAnalysisImage, getReport, listReports, loadToken, mapUrl, photoUrl, saveToken, updateReport,
   type ReportDetail, type ReportStatus, type ReportSummary,
 } from '../services/admin-api';
 import type { CheckStatus } from '../types/inspection';
@@ -250,7 +250,7 @@ function DetailPanel({ token, detail, loading, error, onClose, onSaved, onFail }
         </View>}
       </View>
 
-      {img && <Image source={{ uri: img }} accessibilityLabel="신고 사진" resizeMode="contain" style={a.photo} />}
+      {img && <PhotoViewer key={detail.inspection_id} token={token} id={detail.inspection_id} photo={img} onAuthFail={onFail} />}
 
       <Section title="처리 상태">
         <Segmented value={detail.status} disabled={!!saving} onChange={v => void save({ status: v as ReportStatus })}
@@ -304,6 +304,47 @@ function TopBar({ right }: { right: ReactNode }) {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return <View style={{ gap: 10 }}><Text style={a.sectionTitle}>{title}</Text>{children}</View>;
+}
+
+// 사진 보기: [원본 | AI 분석] 전환. 분석 이미지는 처음 누를 때 한 번만 받는다 (점검 건이 바뀌면 key로 새로 만듦).
+const ANALYSIS_LEGEND: { color: string; label: string; dashed?: boolean }[] = [
+  { color: '#E63CC8', label: '횡단보도' }, { color: '#1E8CE6', label: '차도' },
+  { color: '#FFC814', label: '선형 블록' }, { color: '#FF641E', label: '점형 블록' },
+  { color: '#3CE650', label: '선형 중심선' }, { color: '#00C8E6', label: '점형 범위', dashed: true },
+  { color: '#EB2828', label: '연장선 → 차도', dashed: true }, { color: '#3CC850', label: '연장선 → 횡단보도 입구', dashed: true },
+];
+
+function PhotoViewer({ token, id, photo, onAuthFail }: { token: string; id: string; photo: string; onAuthFail: (e: unknown) => void }) {
+  const [view, setView] = useState<'photo' | 'analysis'>('photo');
+  const [analysis, setAnalysis] = useState<string | null | undefined>(undefined);  // undefined = 아직 안 받음, null = 없음
+  const [loading, setLoading] = useState(false), [error, setError] = useState('');
+  async function show(next: string) {
+    setView(next as 'photo' | 'analysis');
+    if (next !== 'analysis' || analysis !== undefined || loading) return;
+    setLoading(true); setError('');
+    try { setAnalysis(await getAnalysisImage(token, id)); }
+    catch (e) { if (e instanceof AdminAuthError) onAuthFail(e); else setError(e instanceof Error ? e.message : '분석 이미지를 불러오지 못했습니다.'); }
+    finally { setLoading(false); }
+  }
+  return <View style={{ gap: 10 }}>
+    <Segmented value={view} onChange={v => void show(v)} options={[{ value: 'photo', label: '원본 사진' }, { value: 'analysis', label: 'AI 분석' }]} />
+    {view === 'photo'
+      ? <Image source={{ uri: photo }} accessibilityLabel="신고 사진" resizeMode="contain" style={a.photo} />
+      : <>
+        <View style={[a.photo, { alignItems: 'center', justifyContent: 'center' }]}>
+          {loading ? <ActivityIndicator color="#FFFFFF" />
+            : analysis ? <Image source={{ uri: analysis }} accessibilityLabel="AI 분석 이미지: 인식한 영역, 블록 경로, 판정 위치" resizeMode="contain" style={{ width: '100%', height: '100%' }} />
+              : <Text style={[a.meta, { color: '#D1D5DB', textAlign: 'center', paddingHorizontal: 24 }]}>{error || '이 기능을 넣기 전에 접수된 점검이라 분석 이미지가 없습니다.'}</Text>}
+        </View>
+        {!!analysis && <View style={[a.row, { flexWrap: 'wrap', columnGap: 12, rowGap: 6 }]}>
+          {ANALYSIS_LEGEND.map(l => <View key={l.label} style={[a.row, { gap: 5 }]}>
+            <View style={l.dashed ? { width: 14, height: 0, borderTopWidth: 2, borderStyle: 'dashed', borderColor: l.color } : { width: 10, height: 10, borderRadius: 2, backgroundColor: l.color }} />
+            <Text style={a.meta}>{l.label}</Text>
+          </View>)}
+          <Text style={a.meta}>원 + 코드 = 판정 위치 (빨강 의심 · 초록 정상 · 회색 보류)</Text>
+        </View>}
+      </>}
+  </View>;
 }
 
 // 지도는 새 탭으로 연다 (관리 화면 상태 유지). 웹이 아니면 기기 기본 브라우저·지도 앱으로.
