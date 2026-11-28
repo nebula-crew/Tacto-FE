@@ -5,8 +5,8 @@ import { GuideGallery } from '../components/guide-gallery';
 import Head from 'expo-router/head';
 import { labels as checkLabels } from '../components/ui';
 import {
-  AdminAuthError, REPORT_STATUSES, REPORT_STATUS_LABELS, getReport, listReports, loadToken, mapUrl, photoUrl, saveToken, updateReport,
-  type ReportDetail, type ReportStatus, type ReportSummary,
+  AdminAuthError, REPORT_STATUSES, REPORT_STATUS_LABELS, RULE_FAMILIES, RULE_NAMES, getAnalysisImage, getReport, listReports, loadToken, mapUrl, photoUrl, saveToken, updateReport,
+  type ReportDetail, type ReportStatus, type ReportSummary, type RuleFinding,
 } from '../services/admin-api';
 import type { CheckStatus } from '../types/inspection';
 
@@ -32,6 +32,8 @@ export default function Admin() {
   const requested = useRef<string | null>(null);
   const { width } = useWindowDimensions();
   const wide = width >= 1000;
+  // 상세 패널: 화면 절반 정도 (사진·분석 이미지를 크게 보려고). 최소 520, 최대 820
+  const sideWidth = Math.round(Math.min(820, Math.max(520, width * 0.5)));
 
   const fail = useCallback((e: unknown) => {
     if (e instanceof AdminAuthError) { saveToken(''); setToken(''); setRows(null); setDetail(null); setSelectedId(null); }
@@ -131,13 +133,12 @@ export default function Admin() {
               placeholderTextColor={t.faint} style={[a.input, a.search]} />
           </View>
           {!!error && !selectedId && <Text accessibilityRole="alert" style={a.errorBar}>{error}</Text>}
-          <ReportTable rows={visible} loaded={!!rows} loading={listLoading} compact={!wide || !!panel && width < 1280} selectedId={selectedId} onOpen={id => void open(id)}
+          <ReportTable rows={visible} loaded={!!rows} loading={listLoading} compact={!wide || !!panel && width - sideWidth < 760} selectedId={selectedId} onOpen={id => void open(id)}
             empty={rows?.length ? '조건에 맞는 신고가 없습니다.' : onlyReported ? '아직 접수된 신고가 없습니다.' : '점검 기록이 없습니다.'} />
           {!!rows && <View style={a.tableFoot}><Text style={a.meta}>{visible.length}건 표시 · 최근 100건 기준</Text></View>}
         </View>
       </ScrollView>}
-      {panel && <View style={wide ? a.side : a.sideFull}>{panel}</View>}
-      </>}
+      {panel && <View style={wide ? [a.side, { width: sideWidth }] : a.sideFull}>{panel}</View>}
     </View>
   </View>;
 }
@@ -170,7 +171,7 @@ function Login({ error, onLogin, onError }: { error: string; onLogin: (t: string
 
 // ── 목록 표 ─────────────────────────────────────────────
 
-const COLS = { time: 150, overall: 110, codes: 90, status: 110 };
+const COLS = { time: 150, overall: 110, codes: 110, status: 110 };
 
 function ReportTable({ rows, loaded, loading, compact, selectedId, onOpen, empty }: {
   rows: ReportSummary[]; loaded: boolean; loading: boolean; compact: boolean; selectedId: string | null; onOpen: (id: string) => void; empty: string;
@@ -182,7 +183,7 @@ function ReportTable({ rows, loaded, loading, compact, selectedId, onOpen, empty
       <Text style={[a.th, { width: COLS.time }]}>접수 시각</Text>
       <Text style={[a.th, { flex: 1 }]}>위치</Text>
       <Text style={[a.th, { width: COLS.overall }]}>AI 판정</Text>
-      <Text style={[a.th, { width: COLS.codes }]}>오류 의심</Text>
+      <Text style={[a.th, { width: COLS.codes }]}>의심 규칙</Text>
       <Text style={[a.th, { width: COLS.status }]}>처리 상태</Text>
     </View>}
     {rows.length === 0 && <View style={a.emptyBox}><Text style={a.meta}>{empty}</Text></View>}
@@ -194,12 +195,12 @@ function ReportTable({ rows, loaded, loading, compact, selectedId, onOpen, empty
         onHoverIn={() => setHover(r.inspection_id)} onHoverOut={() => setHover(h => h === r.inspection_id ? null : h)} style={style}>
         {compact ? <View style={{ flex: 1, gap: 6 }}>
           <View style={[a.row, { justifyContent: 'space-between' }]}><View style={{ flex: 1 }}>{addr}</View><StatusPill status={r.status} /></View>
-          <View style={a.row}><Text style={a.meta}>{fmtDateTime(r.created_at)}</Text><Text style={a.meta}>·</Text><CheckPill status={r.overall} /><Text style={a.meta}>{r.codes.length ? `의심 ${r.codes.length}건` : ''}</Text></View>
+          <View style={a.row}><Text style={a.meta}>{fmtDateTime(r.created_at)}</Text><Text style={a.meta}>·</Text><CheckPill status={r.overall} /><Text style={[a.meta, a.mono]}>{r.codes.join(' · ')}</Text></View>
         </View> : <>
           <Text style={[a.td, a.mono, { width: COLS.time }]}>{fmtDateTime(r.created_at)}</Text>
           <View style={{ flex: 1, paddingRight: 16 }}>{addr}</View>
           <View style={{ width: COLS.overall }}><CheckPill status={r.overall} /></View>
-          <Text style={[a.td, { width: COLS.codes, color: r.codes.length ? t.ink : t.faint }]}>{r.codes.length ? `${r.codes.length}건` : '–'}</Text>
+          <Text style={[a.td, a.mono, { width: COLS.codes, color: r.codes.length ? t.danger : t.faint, fontWeight: '600' }]} numberOfLines={1}>{r.codes.length ? r.codes.join(' · ') : '–'}</Text>
           <View style={{ width: COLS.status }}><StatusPill status={r.status} /></View>
         </>}
       </Pressable>;
@@ -261,7 +262,11 @@ function DetailPanel({ token, detail, loading, error, onClose, onSaved, onFail }
         </View>}
       </View>
 
-      {img && <Image source={{ uri: img }} accessibilityLabel="신고 사진" resizeMode="contain" style={a.photo} />}
+      {img && <PhotoViewer key={detail.inspection_id} token={token} id={detail.inspection_id} photo={img} onAuthFail={onFail} />}
+
+      <Section title="규칙별 판정">
+        <RuleTable findings={detail.findings} scope={detail.scope} />
+      </Section>
 
       <Section title="처리 상태">
         <Segmented value={detail.status} disabled={!!saving} onChange={v => void save({ status: v as ReportStatus })}
@@ -283,7 +288,7 @@ function DetailPanel({ token, detail, loading, error, onClose, onSaved, onFail }
       {!!notice && <Text style={a.notice}>{notice}</Text>}
       {!!error && <Text accessibilityRole="alert" style={a.errorBar}>{error}</Text>}
 
-      <Section title="AI 판정">
+      <Section title="시민에게 보인 결과 설명">
         <Text style={[a.td, { color: t.body, lineHeight: 21 }]}>{ins.summary}</Text>
         <View style={a.checks}>
           {ins.checks.map((ch, i) => <View key={ch.code + i} style={[a.check, i > 0 && { borderTopWidth: 1, borderTopColor: t.line }]}>
@@ -315,6 +320,75 @@ function TopBar({ right }: { right: ReactNode }) {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return <View style={{ gap: 10 }}><Text style={a.sectionTitle}>{title}</Text>{children}</View>;
+}
+
+// 규칙별 판정: 서버 판정 원본 (규칙 코드·이름·판정·서버 메시지·근거 조항·개선 방향). 의심 → 보류 → 정상 순.
+function RuleTable({ findings, scope }: { findings: RuleFinding[]; scope: Record<string, string> }) {
+  const families = Object.entries(scope);
+  return <View style={{ gap: 10 }}>
+    {families.length > 0 && <View style={[a.row, { flexWrap: 'wrap', columnGap: 14, rowGap: 4 }]}>
+      {families.map(([k, v]) => <Text key={k} style={a.meta}><Text style={[a.mono, { fontWeight: '600', color: t.ink }]}>{k}</Text> {RULE_FAMILIES[k] ?? ''}: {v}</Text>)}
+    </View>}
+    {findings.length === 0
+      ? <Text style={a.meta}>판정된 규칙이 없습니다.</Text>
+      : <View style={a.checks}>
+        {findings.map((f, i) => <View key={f.code + i} style={[a.check, i > 0 && { borderTopWidth: 1, borderTopColor: t.line }]}>
+          <View style={[a.row, { justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+            <View style={[a.row, { gap: 8, flexShrink: 1 }]}>
+              <View style={[a.codeChip, { backgroundColor: CHECK_TONE[f.verdict].bg }]}><Text style={[a.codeText, { color: CHECK_TONE[f.verdict].fg }]}>{f.code}</Text></View>
+              <Text style={[a.td, { fontWeight: '600', flexShrink: 1 }]}>{RULE_NAMES[f.code] ?? f.code}{f.primary === false ? ' (참고)' : ''}</Text>
+            </View>
+            <CheckPill status={f.verdict} />
+          </View>
+          <Text style={[a.td, { color: t.body, fontSize: 13, lineHeight: 19 }]}>{f.message}</Text>
+          {!!f.clause && <Text style={[a.meta, { lineHeight: 18 }]}>근거: {f.clause}</Text>}
+          {!!f.suggestion && <Text style={[a.meta, { lineHeight: 18 }]}>개선 방향: {f.suggestion}</Text>}
+        </View>)}
+      </View>}
+  </View>;
+}
+
+// 사진 보기: [원본 | AI 분석] 전환. 분석 이미지는 처음 누를 때 한 번만 받는다 (점검 건이 바뀌면 key로 새로 만듦).
+const ANALYSIS_LEGEND: { color: string; label: string; dashed?: boolean }[] = [
+  { color: '#E63CC8', label: '횡단보도' }, { color: '#1E8CE6', label: '차도' },
+  { color: '#FFC814', label: '선형 블록' }, { color: '#FF641E', label: '점형 블록' },
+  { color: '#3CE650', label: '선형 중심선' }, { color: '#00C8E6', label: '점형 범위', dashed: true },
+  { color: '#EB2828', label: '연장선 → 차도', dashed: true }, { color: '#3CC850', label: '연장선 → 횡단보도 입구', dashed: true },
+];
+
+function PhotoViewer({ token, id, photo, onAuthFail }: { token: string; id: string; photo: string; onAuthFail: (e: unknown) => void }) {
+  const [view, setView] = useState<'photo' | 'analysis'>('photo');
+  const [analysis, setAnalysis] = useState<string | null | undefined>(undefined);  // undefined = 아직 안 받음, null = 없음
+  const [loading, setLoading] = useState(false), [error, setError] = useState(''), [photoFailed, setPhotoFailed] = useState(false);
+  async function show(next: string) {
+    setView(next as 'photo' | 'analysis');
+    if (next !== 'analysis' || analysis !== undefined || loading) return;
+    setLoading(true); setError('');
+    try { setAnalysis(await getAnalysisImage(token, id)); }
+    catch (e) { if (e instanceof AdminAuthError) onAuthFail(e); else setError(e instanceof Error ? e.message : '분석 이미지를 불러오지 못했습니다.'); }
+    finally { setLoading(false); }
+  }
+  return <View style={{ gap: 10 }}>
+    <Segmented value={view} onChange={v => void show(v)} options={[{ value: 'photo', label: '원본 사진' }, { value: 'analysis', label: 'AI 분석' }]} />
+    {view === 'photo'
+      ? photoFailed
+        ? <View style={[a.photo, { alignItems: 'center', justifyContent: 'center' }]}><Text style={[a.meta, { color: '#D1D5DB' }]}>저장소에서 사진을 찾지 못했습니다.</Text></View>
+        : <Image source={{ uri: photo }} accessibilityLabel="신고 사진" resizeMode="contain" style={a.photo} onError={() => setPhotoFailed(true)} />
+      : <>
+        <View style={[a.photo, { alignItems: 'center', justifyContent: 'center' }]}>
+          {loading ? <ActivityIndicator color="#FFFFFF" />
+            : analysis ? <Image source={{ uri: analysis }} accessibilityLabel="AI 분석 이미지: 인식한 영역, 블록 경로, 판정 위치" resizeMode="contain" style={{ width: '100%', height: '100%' }} />
+              : <Text style={[a.meta, { color: '#D1D5DB', textAlign: 'center', paddingHorizontal: 24 }]}>{error || '이 기능을 넣기 전에 접수된 점검이라 분석 이미지가 없습니다.'}</Text>}
+        </View>
+        {!!analysis && <View style={[a.row, { flexWrap: 'wrap', columnGap: 12, rowGap: 6 }]}>
+          {ANALYSIS_LEGEND.map(l => <View key={l.label} style={[a.row, { gap: 5 }]}>
+            <View style={l.dashed ? { width: 14, height: 0, borderTopWidth: 2, borderStyle: 'dashed', borderColor: l.color } : { width: 10, height: 10, borderRadius: 2, backgroundColor: l.color }} />
+            <Text style={a.meta}>{l.label}</Text>
+          </View>)}
+          <Text style={a.meta}>원 + 코드 = 판정 위치 (빨강 의심 · 초록 정상 · 회색 보류)</Text>
+        </View>}
+      </>}
+  </View>;
 }
 
 // 지도는 새 탭으로 연다 (관리 화면 상태 유지). 웹이 아니면 기기 기본 브라우저·지도 앱으로.
@@ -439,10 +513,12 @@ const a = StyleSheet.create({
   iconBtn: { width: 32, height: 32, borderRadius: 6, alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   dl: { borderWidth: 1, borderColor: t.line, borderRadius: 10, paddingVertical: 4, paddingHorizontal: 14 },
   field: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 10, backgroundColor: '#0B0F14' },
+  photo: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: '#0B0F14' },  // 세로 사진이 많아 정사각형 틀
   sectionTitle: { fontSize: 12, fontWeight: '600', color: t.muted, letterSpacing: 0.3, fontFamily: font },
   checks: { borderWidth: 1, borderColor: t.line, borderRadius: 10 },
   check: { padding: 12, paddingHorizontal: 14, gap: 6 },
+  codeChip: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5 },
+  codeText: { fontFamily: mono, fontSize: 12.5, fontWeight: '700' },
   notice: { fontSize: 13, color: t.accent, fontFamily: font },
   errorText: { fontSize: 13, color: t.danger, fontFamily: font, textAlign: 'center', paddingHorizontal: 20 },
   errorBar: { fontSize: 13, color: t.danger, backgroundColor: '#FEF2F2', paddingVertical: 10, paddingHorizontal: 14, fontFamily: font },

@@ -184,6 +184,31 @@ test('admin map link uses capture coordinates and skips missing or invalid ones'
   assert.equal(mapUrl({ lat: 37.5, lng: 127 }), `https://map.kakao.com/link/map/${encodeURIComponent('신고 위치')},37.5,127`);
   for (const loc of [null, undefined, { address: '주소만' }, { lat: 37.5, lng: null }, { lat: 91, lng: 0 }, { lat: Number.NaN, lng: 1 }]) assert.equal(mapUrl(loc), null);
 });
+test('admin analysis image sends the token, returns a data URL, and treats 404 as no image', async () => {
+  class FileReader { readAsDataURL(blob) { blob.arrayBuffer().then(b => { this.result = 'data:' + blob.type + ';base64,' + Buffer.from(b).toString('base64'); this.onload(); }); } }
+  let sent;
+  let api = load('services/admin-api.ts', {}, { FileReader, fetch: async (url, options) => { sent = { url, options }; return { ok: true, status: 200, blob: async () => new Blob(['jpg'], { type: 'image/jpeg' }) }; } });
+  assert.equal(await api.getAnalysisImage('tok', 'id/1'), 'data:image/jpeg;base64,' + Buffer.from('jpg').toString('base64'));
+  assert.equal(sent.url, 'http://example.test:8000/api/admin/inspections/id%2F1/analysis');
+  assert.equal(sent.options.headers['X-Admin-Token'], 'tok');
+  api = load('services/admin-api.ts', {}, { FileReader, fetch: async () => ({ ok: false, status: 404 }) });
+  assert.equal(await api.getAnalysisImage('tok', 'old'), null);
+  api = load('services/admin-api.ts', {}, { FileReader, fetch: async () => ({ ok: false, status: 401 }) });
+  await assert.rejects(api.getAnalysisImage('bad', 'x'), /토큰/);
+});
+test('admin detail keeps raw rule findings (code, clause) sorted suspected → hold → normal, plus scope', () => {
+  const { toDetail, RULE_NAMES } = load('services/admin-api.ts');
+  const d = toDetail({ inspection_id: 'r1', overall: 'suspected', status: 'received', codes: ['C4'], result: { ...backend, findings: [
+    { code: 'C1', verdict: 'normal', message: '블록 경로가 횡단보도 입구까지 이어짐' },
+    { code: 'H2', verdict: 'hold', message: '시점 보정 실패' },
+    { code: 'C4', verdict: 'suspected', message: '입구 점형 없음', clause: '별표 1 제16호', suggestion: '점형 설치' },
+  ] } });
+  assert.equal(d.findings.map(f => f.code).join(), 'C4,H2,C1');
+  assert.equal(d.findings[0].clause, '별표 1 제16호');
+  assert.deepEqual({ ...d.scope }, { C: '판정', M: '건너뜀 (블록 영역이 너무 작거나 없음)' });
+  assert.equal(d.inspection.id, 'abc123');  // 시민용 변환 결과도 그대로
+  for (const code of ['M3', 'M4', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'H1', 'H2', 'H3', 'H4']) assert.ok(RULE_NAMES[code], code);
+});
 function locationModule(location) {
   return load('services/location.ts', { 'expo-location': { Accuracy: { Balanced: 3 }, ...location } });
 }
