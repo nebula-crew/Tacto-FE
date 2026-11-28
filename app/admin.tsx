@@ -139,6 +139,7 @@ export default function Admin() {
         </View>
       </ScrollView>}
       {panel && <View style={wide ? [a.side, { width: sideWidth }] : a.sideFull}>{panel}</View>}
+      </>}
     </View>
   </View>;
 }
