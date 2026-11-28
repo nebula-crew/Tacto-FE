@@ -209,3 +209,99 @@ test('location: denied permission, errors and timeouts all fall back to no locat
   assert.equal(await loc.settleWithin(null, 20), null);
   assert.deepEqual({ ...(await loc.settleWithin(Promise.resolve({ lat: 1, lng: 2 }), 1000)) }, { lat: 1, lng: 2 });
 });
+
+test('result illustration catalog covers all current rules and distinguishes retake guides', () => {
+  const { installationGuides } = load('constants/installation-guides.ts');
+  const { CODE_TITLES } = load('services/inspection-schema.ts');
+  for (const code of Object.keys(CODE_TITLES)) {
+    assert.ok(installationGuides[code]?.length, code);
+    for (const guide of installationGuides[code]) {
+      assert.equal(!!guide.capture, code.startsWith('H'), code);
+      assert.ok(guide.title && guide.caption && guide.scene, code);
+    }
+  }
+  assert.equal(installationGuides.M3.length, 2);
+  assert.notEqual(installationGuides.M3[0].scene, installationGuides.M3[1].scene);
+});
+
+test('guide selection separates suspected issues from normal and undecidable results', () => {
+  const { selectInstallationGuides, installationGuides, suspectedGuides, guideLayouts, issueLayouts, GUIDE_COLUMNS, GUIDE_ROWS } = load('constants/installation-guides.ts');
+  for (const code of ['M3', 'M4', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6']) {
+    const normal = selectInstallationGuides([code], 'normal');
+    const suspected = selectInstallationGuides(code === 'C4' ? [{ code, sourceMessages: ['횡단보도 입구에서 점형 블록을 확인하지 못했어요.'] }] : [code], 'suspected');
+    const held = selectInstallationGuides([code], 'hold');
+    assert.equal(normal[0].caption, installationGuides[code][0].caption);
+    assert.equal(suspected[0].caption, suspectedGuides[code][0].caption);
+    assert.ok(held.every(guide => guide.capture));
+    assert.ok(suspected.every(guide => issueLayouts[guide.scene]?.bad?.length));
+  }
+  assert.ok(selectInstallationGuides(['H1', 'H3'], 'hold').every(guide => guide.capture));
+  const mixed = selectInstallationGuides(['M3', 'C1', 'M3'], 'suspected');
+  assert.equal(mixed.length, 3);
+  for (const drawing of [...Object.values(guideLayouts), ...Object.values(issueLayouts)]) {
+    assert.equal(drawing.rows.length, GUIDE_ROWS);
+    assert.equal(Object.hasOwn(drawing, 'connection'), false);
+    assert.ok(drawing.rows.every(row => row.length === GUIDE_COLUMNS && /^[.RWD LHO]+$/.test(row)));
+    for (const point of [...(drawing.bad ?? []), ...(drawing.uncertain ?? []), ...(drawing.danger ?? [])]) {
+      assert.ok(point.every((value, index) => Number.isInteger(value) && value >= 0 && value < (index === 0 ? GUIDE_ROWS : GUIDE_COLUMNS)));
+    }
+    for (const path of [drawing.danger].filter(Boolean)) {
+      for (let i = 1; i < path.length; i++) assert.ok(path[i][0] === path[i - 1][0] || path[i][1] === path[i - 1][1]);
+    }
+  }
+  for (const scene of ['entrance', 'crossing-turn', 'entrance-dots', 'approach', 'parallel']) {
+    for (const row of guideLayouts[scene].rows.slice(0, 2)) assert.equal(row, 'RRWWWRR');
+  }
+});
+
+test('C4 illustration follows only the actual suspected server subtype', () => {
+  const { parseInspection } = load('services/inspection-schema.ts');
+  const { selectInstallationGuides } = load('constants/installation-guides.ts');
+  const dots = { code: 'C4', verdict: 'suspected', message: '횡단보도 입구에서 점형 블록을 확인하지 못했어요.' };
+  const direction = { code: 'C4', verdict: 'suspected', message: '입구의 선형 블록 돌출선이 횡단보도 진행 방향과 약 30° 다른 것으로 보여요.' };
+  const parse = findings => parseInspection({ inspection_id: 'c4', overall: 'suspected', findings, scope: {} });
+  const dotResult = parse([dots]);
+  assert.equal(selectInstallationGuides(dotResult.checks, 'suspected').map(guide => guide.scene).join(), 'entrance-dots');
+  assert.doesNotMatch(dotResult.checks[0].detail, /입구의 선형 블록 돌출선이/);
+  const directionResult = parse([direction]);
+  assert.equal(selectInstallationGuides(directionResult.checks, 'suspected').map(guide => guide.scene).join(), 'parallel');
+  assert.doesNotMatch(directionResult.checks[0].detail, /点形|점형 블록을 확인하지 못했어요/);
+  const both = parse([dots, direction, dots]);
+  assert.equal(both.checks.length, 1);
+  assert.equal(both.checks[0].sourceMessages.length, 2);
+  assert.equal(selectInstallationGuides(both.checks, 'suspected').length, 2);
+  const mixed = parse([dots, { ...direction, verdict: 'normal' }, { code: 'H2', verdict: 'hold', message: '방향 판정 보류' }]);
+  assert.equal(selectInstallationGuides(mixed.checks.filter(check => check.status === 'suspected'), 'suspected').map(guide => guide.scene).join(), 'entrance-dots');
+  assert.equal(selectInstallationGuides([{ code: 'C4' }], 'suspected').length, 0);
+});
+
+test('adjacent error cells share one rectangle without including unflagged cells', () => {
+  const { problemRegions } = load('constants/installation-guides.ts');
+  assert.equal(JSON.stringify(problemRegions([[2, 1], [2, 2], [2, 3]])), JSON.stringify([{ row: 2, column: 1, rows: 1, columns: 3 }]));
+  assert.equal(JSON.stringify(problemRegions([[3, 2], [4, 2]])), JSON.stringify([{ row: 3, column: 2, rows: 2, columns: 1 }]));
+  assert.equal(problemRegions([[1, 1], [3, 3]]).length, 2);
+  assert.equal(problemRegions([[1, 1], [1, 2], [2, 1]]).length, 3);
+});
+
+test('separated crosswalk examples keep dot and linear tiles joined together', () => {
+  const { issueLayouts, GUIDE_COLUMNS, GUIDE_ROWS } = load('constants/installation-guides.ts');
+  for (const scene of ['entrance', 'safe-direction']) {
+    const rows = issueLayouts[scene].rows;
+    const blocks = [];
+    for (let r = 0; r < GUIDE_ROWS; r++) for (let c = 0; c < GUIDE_COLUMNS; c++) if ('DLH'.includes(rows[r][c])) blocks.push([r, c]);
+    const seen = new Set(), queue = [blocks[0]];
+    while (queue.length) {
+      const [r, c] = queue.pop(), key = r + ',' + c;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        const next = rows[r + dr]?.[c + dc];
+        if (next && 'DLH'.includes(next)) queue.push([r + dr, c + dc]);
+        assert.notEqual(next, 'W', scene + ': blocks should be apart from the crosswalk');
+      }
+    }
+    assert.equal(seen.size, blocks.length, scene + ': dot and linear blocks should form one connected group');
+    assert.ok(blocks.some(([r, c]) => rows[r][c] === 'D'));
+    assert.ok(blocks.some(([r, c]) => rows[r][c] === 'L'));
+  }
+});
