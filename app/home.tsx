@@ -18,7 +18,7 @@ export default function Home() {
   const tiny = height < 770;
   async function pick(camera: boolean) {
     const photo = await picker.pick(camera);
-    // 카메라로 찍은 사진만 촬영 위치를 함께 받는다 (권한을 거부하면 위치 없이 진행).
+    // 카메라로 찍은 사진만 촬영 위치를 함께 받는다 (권한을 거부하면 위치 없이 진행)..
     if (photo) { state.selectPhoto(photo, false, camera); router.push('/inspection'); }
   }
   return <SafeAreaView style={s.safe}><View style={[s.page, h.page, compact && h.compactPage, short && h.shortPage, tiny && h.tinyPage]}>
