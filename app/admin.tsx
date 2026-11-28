@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { GuideGallery } from '../components/guide-gallery';
 import Head from 'expo-router/head';
 import { labels as checkLabels } from '../components/ui';
 import {
@@ -17,6 +18,8 @@ type StatusFilter = ReportStatus | 'all';
 type PressState = { pressed: boolean; hovered?: boolean };
 
 export default function Admin() {
+  const { view } = useLocalSearchParams<{ view?: string }>();
+  const [section, setSection] = useState<'reports' | 'guides'>(view === 'guides' ? 'guides' : 'reports');
   const [token, setToken] = useState(loadToken());
   const [rows, setRows] = useState<ReportSummary[] | null>(null);
   const [onlyReported, setOnlyReported] = useState(true);
@@ -89,12 +92,19 @@ export default function Admin() {
   const panel = selectedId ? <DetailPanel key={selectedId} token={token} detail={detail} loading={detailLoading} error={error} onClose={close} onSaved={onSaved} onFail={fail} /> : null;
 
   return <View style={a.root}>
-    <Head><title>신고 관리 · Tacto 관리자</title></Head>
+    <Head><title>{section === 'guides' ? '그림 검토 · Tacto 관리자' : '신고 관리 · Tacto 관리자'}</title></Head>
     <TopBar right={<>
       <GhostButton title="사용자 앱" onPress={() => router.replace('/home')} />
       <GhostButton title="로그아웃" onPress={logout} />
     </>} />
+    <View style={{ paddingHorizontal: wide ? 32 : 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: t.line }}>
+      <Segmented value={section} onChange={value => setSection(value === 'guides' ? 'guides' : 'reports')}
+        options={[{ value: 'reports', label: '신고 관리' }, { value: 'guides', label: '그림 검토' }]} />
+    </View>
     <View style={a.body}>
+      {section === 'guides' ? <ScrollView style={a.main} contentContainerStyle={a.mainInner}>
+        <View style={{ width: '100%', maxWidth: 620, alignSelf: 'center' }}><GuideGallery /></View>
+      </ScrollView> : <>
       {(wide || !panel) && <ScrollView style={a.main} contentContainerStyle={[a.mainInner, wide && { paddingHorizontal: 32 }]}>
         <View style={a.pageHead}>
           <View style={{ gap: 4, flexShrink: 1 }}>
@@ -129,6 +139,7 @@ export default function Admin() {
         </View>
       </ScrollView>}
       {panel && <View style={wide ? [a.side, { width: sideWidth }] : a.sideFull}>{panel}</View>}
+      </>}
     </View>
   </View>;
 }

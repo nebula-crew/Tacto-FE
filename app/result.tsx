@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Badge, Button, Card, Header, Screen, s } from '../components/ui';
-import { PavingIllustration } from '../components/paving-illustration';
+import { CorrectInstallationExample, InstallationGuide } from '../components/installation-guide';
 import { useInspection } from '../services/inspection-context';
 import { colors as c } from '../constants/theme';
 
 export default function ResultScreen() {
-  const { result, photo, demo } = useInspection();
+  const { result, demo, photo } = useInspection();
   const [expanded, setExpanded] = useState(false);
   if (!result) return <Screen><Header /><Text style={s.title}>표시할 결과가 없어요</Text><Text style={s.text}>앱을 다시 열면 이전 결과는 보관되지 않아요.</Text><Button title="홈으로" onPress={() => router.replace('/home')} /></Screen>;
 
@@ -21,7 +21,7 @@ export default function ResultScreen() {
     <Text style={s.title}>{title}</Text>
     {result.status === 'hold' ? <Text style={s.text}>블록만 확대하지 말고 주변 동선과 연결부까지 함께 담아 주세요. 밝은 곳에서 흔들림 없이 촬영해 주세요.</Text> : <Text style={s.text}>{result.summary}</Text>}
     {demo && <Card><Text style={s.heading}>화면 확인용 예시</Text><Text style={s.text}>선택한 사진의 실제 분석 결과가 아니에요.</Text></Card>}
-    {photo && !demo ? <Image source={{ uri: photo.uri }} style={s.image} resizeMode="contain" accessibilityLabel="점검에 사용한 사진" /> : <PavingIllustration label="점검 보고서 예시" />}
+    <InstallationGuide key={result.id} checks={checks} status={result.status} photoUri={photo?.uri} />
     <Card>
       <Text style={s.heading}>확인 내용</Text>
       {checks.length === 0 && <Text style={s.text}>{result.summary}</Text>}
@@ -50,7 +50,7 @@ export default function ResultScreen() {
                 </View>;
               })}
             </View>}
-            {suggestions.length > 0 && <View style={{ gap: 5, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: c.line }}><Text style={s.eyebrow}>개선 방향</Text>{suggestions.map((suggestion, index) => <Text key={index} style={[s.text, { color: c.ink }]}>{suggestion}</Text>)}</View>}
+            {suggestions.length > 0 && <View style={{ gap: 5, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: c.line }}><Text style={s.eyebrow}>개선 방향</Text>{suggestions.map((suggestion, index) => <Text key={index} style={[s.text, { color: c.ink }]}>{suggestion}</Text>)}{check.status === 'suspected' && <View style={{ marginTop: 8 }}><CorrectInstallationExample code={check.code} /></View>}</View>}
             {evidence.length > 0 && <View style={{ backgroundColor: c.soft, borderRadius: 12, padding: 16, gap: 8 }}>
               <Text style={{ color: c.greenInk, fontWeight: '700', fontSize: 13 }}>근거</Text>
               {evidence.map((item, index) => <Text key={index} style={[s.text, { color: c.ink }]}>{item}</Text>)}

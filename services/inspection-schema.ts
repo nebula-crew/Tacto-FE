@@ -42,7 +42,7 @@ const RULES: Record<string, string> = {
   C3: '횡단보도 입구로 방향을 바꾸는 곳에서는 보행자가 방향 변화를 알아차릴 수 있어야 해요.',
   C4: '횡단보도 입구에서는 점형 블록으로 주의할 지점을 알리고, 선형 블록은 건너는 방향을 안내해야 해요.',
   C5: '횡단보도 앞 점형 블록까지 선형 블록의 안내가 이어져야 해요.',
-  C6: '선형 블록의 돌출선은 횡단보도를 건너는 방향으로 안내해야 해요.',
+  C6: '선형 블록이 이어지는 경로는 횡단보도를 건너는 방향으로 안내해야 해요.',
 };
 const EXPLANATIONS: Record<string, string> = {
   M3: '사진에서 선형 블록이 꺾이거나 갈라지는 지점 주변에 점형 블록이 보이지 않아요. 길의 방향이 바뀌는 곳을 알아차리기 어려울 수 있어요. 사진에 가려졌을 가능성도 있으니 현장에서 해당 지점을 확인해 주세요.',
@@ -52,7 +52,7 @@ const EXPLANATIONS: Record<string, string> = {
   C3: '사진에서는 블록 안내가 횡단보도 입구로 방향을 바꾸지 않고 옆을 지나가는 것으로 보여요. 보행자가 입구를 지나칠 수 있으니 방향 전환 지점을 확인해 주세요.',
   C4: '사진에서 횡단보도 입구의 점형 블록 위치 또는 선형 블록이 안내하는 방향을 다시 살펴볼 필요가 있어요. 두 블록이 실제로 어디를 가리키는지 현장에서 확인해 주세요.',
   C5: '사진에서 횡단보도 앞 점형 블록까지 이어지는 선형 블록을 확인하지 못했어요. 입구까지 안내가 이어지지 않을 수 있으니 블록 연결 상태를 현장에서 확인해 주세요.',
-  C6: '사진에서는 선형 블록이 가리키는 방향과 횡단보도를 건너는 방향이 다른 것으로 보여요. 안내를 따라갔을 때 횡단보도 안쪽으로 향하는지 현장에서 확인해 주세요.',
+  C6: '사진에서는 선형 블록이 이어지는 경로와 횡단보도를 건너는 방향이 다른 것으로 보여요. 안내를 따라갔을 때 횡단보도 안쪽으로 향하는지 현장에서 확인해 주세요.',
 };
 const NORMAL_EXPLANATIONS: Record<string, string> = {
   M3: '사진에서 선형 블록이 꺾이거나 갈라지는 지점 주변에 점형 블록이 확인됐어요. 점형 블록은 길의 방향이 바뀌거나 갈라진다는 점을 보행자에게 알려 주는 역할을 해요. 이 사진에서 확인한 범위에서는 해당 지점의 점형 블록이 빠진 것으로 보이지 않아요.',
@@ -61,7 +61,7 @@ const NORMAL_EXPLANATIONS: Record<string, string> = {
   C2: '사진에서 선형 블록이 횡단보도 바깥의 차도 쪽으로 곧장 안내하는 모습은 확인되지 않았어요. 사진에 보이는 방향을 기준으로 살펴본 결과예요.',
   C3: '사진에서 블록 안내가 횡단보도 입구 쪽으로 이어지는 모습이 확인됐어요. 확인한 범위에서는 입구를 지나쳐 다른 방향으로 안내하는 것으로 보이지 않아요.',
   C5: '사진에서 횡단보도 앞 점형 블록으로 이어지는 선형 안내가 확인됐어요. 확인한 범위에서는 입구로 가는 안내가 빠진 것으로 보이지 않아요.',
-  C6: '사진에서 선형 블록이 가리키는 방향과 횡단보도를 건너는 방향이 맞는 것으로 보여요. 실제 방향과 설치 상태는 현장에서도 확인할 수 있어요.',
+  C6: '사진에서 선형 블록이 이어지는 경로와 횡단보도를 건너는 방향이 맞는 것으로 보여요. 실제 방향과 설치 상태는 현장에서도 확인할 수 있어요.',
 };
 const HOLD_EXPLANATIONS: Record<string, string> = {
   H1: '사진에서 점자블록의 모양이나 위치를 충분히 구분하기 어려워 이번 항목은 판단하지 못했어요. 블록이 가려지지 않도록 밝은 곳에서 선명하게 다시 찍어 주세요.',
@@ -77,7 +77,7 @@ const GUIDANCE: Record<string, string> = {
   C3: '횡단보도 입구로 방향을 바꾸는 지점에 점형 블록이 놓이고, 이후 선형 블록이 입구 쪽으로 이어져 있어야 해요.',
   C4: '횡단보도 입구에 점형 블록이 놓이고, 이어지는 선형 블록의 돌출선이 건너는 방향을 가리켜야 해요.',
   C5: '횡단보도 앞 점형 블록까지 선형 블록이 이어져 입구로 가는 길을 안내해야 해요.',
-  C6: '선형 블록의 돌출선이 횡단보도를 건너는 방향과 나란하게 놓여 있어야 해요.',
+  C6: '선형 블록으로 이루어진 경로가 횡단보도를 건너는 방향으로 이어져 있어야 해요.',
 };
 const LAW = '「장애인등편의법 시행규칙」 별표 1 제16호';
 const BASIS: Record<string, string> = {
@@ -108,6 +108,9 @@ function parseLegacy(v: Record<string, unknown>): Inspection {
   for (const item of v.checks) {
     if (!item || typeof item !== 'object' || typeof item.code !== 'string' || typeof item.title !== 'string' || typeof item.detail !== 'string' || typeof item.status !== 'string' || ![...STATUSES, 'not_applicable'].includes(item.status)) throw new Error('점검 항목 응답 형식을 확인해 주세요.');
   }
+  for (const item of v.checks as Record<string, unknown>[]) {
+    if (item.sourceMessages !== undefined && (!Array.isArray(item.sourceMessages) || item.sourceMessages.some(message => typeof message !== 'string'))) throw new Error('점검 항목 원문 형식을 확인해 주세요.');
+  }
   return v as unknown as Inspection;
 }
 
@@ -122,6 +125,11 @@ function titleOf(f: Finding): string {
 function explanationOf(f: Finding): string {
   const rule = RULES[f.code];
   const withRule = (observation: string) => rule ? `확인 기준: ${rule}\n사진에서 확인한 내용: ${observation}` : observation;
+  if (f.verdict === 'suspected' && f.code === 'C4') {
+    if (/점형/.test(f.message) && /확인하지 못|없|누락/.test(f.message)) return withRule('사진에서 횡단보도 입구의 점형 블록을 확인하지 못했어요. 사진에 보이지 않거나 가려졌을 가능성도 있으니 실제 설치 상태를 현장에서 살펴봐 주세요.');
+    if (/돌출선/.test(f.message) && /다르|다른|어긋|불일치/.test(f.message)) return withRule(plain(f.message));
+    return withRule(plain(f.message));
+  }
   if (f.verdict === 'suspected') return withRule(EXPLANATIONS[f.code] ?? plain(f.message));
   if (f.verdict === 'hold') {
     if (HOLD_EXPLANATIONS[f.code]) return HOLD_EXPLANATIONS[f.code];
@@ -173,6 +181,7 @@ function merge(checks: Inspection['checks']): Inspection['checks'] {
         return true;
       });
       same.detail = [same.detail, ...extra].join('\n');
+      same.sourceMessages = [...new Set([...(same.sourceMessages ?? []), ...(c.sourceMessages ?? [])])];
     }
     else out.push({ ...c });
   }
@@ -191,6 +200,7 @@ function parseBackend(v: Record<string, unknown>): Inspection {
     title: titleOf(f),
     status: f.verdict as CheckStatus,
     detail: detailOf(f),
+    sourceMessages: [f.message],
   }));
   const scope = v.scope && typeof v.scope === 'object' ? (v.scope as Record<string, unknown>) : {};
   for (const [family, text] of Object.entries(scope)) {
